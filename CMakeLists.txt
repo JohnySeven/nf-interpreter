@@ -190,6 +190,22 @@ message(STATUS "")
 #######################
 
 
+#################################################################
+# nanoFramework features
+#################################################################
+
+#################################################################
+# debugger (default is TRUE to include debugger in release image
+if(NOT NF_FEATURE_DEBUGGER OR
+   NOT "${NF_FEATURE_DEBUGGER}" STREQUAL "TRUE")
+    set(NF_FEATURE_DEBUGGER TRUE)
+else()
+    set(NF_FEATURE_DEBUGGER FALSE)
+endif()
+
+#################################################################
+
+
 #######################
 # ChibiOS
 if(RTOS_CHIBIOS_CHECK)
@@ -247,7 +263,7 @@ if(RTOS_CHIBIOS_CHECK)
 
         # need to setup a separate CMake project to download the code from the GitHub repository
         # otherwise it won't be available before the actual build step
-        configure_file("CMake/CHIBIOS.CMakeLists.cmake.in"
+        configure_file("CMake/ChibiOS.CMakeLists.cmake.in"
                     "${CMAKE_BINARY_DIR}/ChibiOS_Download/CMakeLists.txt")
         
         # setup CMake project for ChibiOS download

@@ -62,6 +62,8 @@ set(NF_CoreCLR_SRCS
     TypeSystemLookup.cpp
     StringTableData.cpp
     TypeSystem.cpp
+    nanoSupport_CRC32.c
+    
     # TODO FIXME need to investigate how this file can be automated 
     CLR_RT_InteropAssembliesTable.cpp
 
@@ -73,7 +75,23 @@ set(NF_CoreCLR_SRCS
     CorLib_Native_System_TimeSpan.cpp
 
     # CLR startup
-    CLRStartup.cpp   
+    CLRStartup.cpp
+
+    # Core stubs
+    Hardware_stub.cpp
+    Heap_Persistence_stub.cpp
+    InterruptHandler_stub.cpp
+    IOPort_stub.cpp
+    RPC_stub.cpp
+    BinaryFormatter_stub.cpp
+
+    # CLR stubs
+    Debugger_stub.cpp
+    Diagnostics_stub.cpp
+    Messaging_stub.cpp
+    
+    # HAL
+    HAL_Time.cpp
 )
 
 foreach(SRC_FILE ${NF_CoreCLR_SRCS})
@@ -89,6 +107,22 @@ foreach(SRC_FILE ${NF_CoreCLR_SRCS})
 
             # CLR startup
             ${PROJECT_SOURCE_DIR}/src/CLR/Startup
+
+            # Core stubs
+            ${PROJECT_SOURCE_DIR}/src/CLR/Core/Hardware
+            ${PROJECT_SOURCE_DIR}/src/CLR/Core/HeapPersistence
+            ${PROJECT_SOURCE_DIR}/src/CLR/Core/InterruptHandler
+            ${PROJECT_SOURCE_DIR}/src/CLR/Core/IOPort
+            ${PROJECT_SOURCE_DIR}/src/CLR/Core/RPC
+            ${PROJECT_SOURCE_DIR}/src/CLR/Core/Serialization
+
+            # CLR stubs
+            ${PROJECT_SOURCE_DIR}/src/CLR/Debugger
+            ${PROJECT_SOURCE_DIR}/src/CLR/Diagnostics
+            ${PROJECT_SOURCE_DIR}/src/CLR/Messaging
+            
+            # HAL
+            ${PROJECT_SOURCE_DIR}/src/HAL
 
         CMAKE_FIND_ROOT_PATH_BOTH
     )

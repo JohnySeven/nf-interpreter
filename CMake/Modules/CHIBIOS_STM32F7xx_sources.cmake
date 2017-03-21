@@ -106,33 +106,36 @@ list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/por
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/xWDGv1)
 
 
-#######################################################################################################################################
-# WHEN ADDING A NEW BOARD add the respective IF clause bellow along with the default linker file name (without extension)
-#######################################################################################################################################
+####################################################################################
+# WHEN ADDING A NEW CHIBIOS OVERLAY component add the include directory(ies) bellow 
+####################################################################################
+# component STM32_FLASH
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/FLASHv2)
 
-# linker file
-if(${CHIBIOS_BOARD} STREQUAL "ST_NUCLEO144_F746ZG")
-    set(DEFAULT_LINKER_FILE_NAME "STM32F746xG")
-endif()
+###############################################################################################################################
+# Add above the required include directory(ies) for a new nanoFramework overlay component that you are adding
+# following the template bellow. 
+#
+# list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/<path-here>)
+###############################################################################################################################
 
-#######################################################################################################################################
-# this function sets the linker options including the default linker file
-# if the target uses a specific linker file use the function CHIBIOS_SET_LINKER_OPTIONS_AND_FILE
-function(CHIBIOS_SET_LINKER_OPTIONS TARGET)
 
-    get_target_property(TARGET_LD_FLAGS ${TARGET} LINK_FLAGS)
-    if(TARGET_LD_FLAGS)
-        set(TARGET_LD_FLAGS "-T${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ports/ARMCMx/compilers/GCC/ld/${DEFAULT_LINKER_FILE_NAME}.ld ${TARGET_LD_FLAGS}")
-    else()
-        set(TARGET_LD_FLAGS "-T${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ports/ARMCMx/compilers/GCC/ld/${DEFAULT_LINKER_FILE_NAME}.ld")
-    endif()
-    set_target_properties(${TARGET} PROPERTIES LINK_FLAGS ${TARGET_LD_FLAGS})
+####################################################################################################
+# WHEN ADDING A NEW CHIBIOS OVERLAY component add the source file(s) specific to this series bellow 
+####################################################################################################
+# component STM32_FLASH
+list(APPEND ChibiOSnfOverlay_SOURCES ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/FLASHv2/flash_lld.c)
 
-endfunction()
+##########################################################################################################################
+# Add above ALL the source code file(s) low level driver specif for a series required for a new nanoFramework 
+# overlay component that you are adding following the template bellow. 
+#
+# list(APPEND CHIBIOS_SOURCES ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/src/<path-here>)
+##########################################################################################################################
+
 
 #######################################################################################################################################
 # this function sets the linker options AND a specific linker file (full path and name, including extension)
-# if the target uses the default linker file use the function CHIBIOS_SET_LINKER_OPTIONS
 function(CHIBIOS_SET_LINKER_OPTIONS_AND_FILE TARGET LINKER_FILE_NAME)
 
     get_target_property(TARGET_LD_FLAGS ${TARGET} LINK_FLAGS)

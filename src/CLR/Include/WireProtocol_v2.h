@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#include <nanoSupport.h>
 
 #ifndef min
 #define min(a,b)  (((a) < (b)) ? (a) : (b))
@@ -93,6 +94,19 @@ typedef struct WP_Packet
     uint32_t m_size;
 }WP_Packet;
 
+typedef struct WP_Controller
+{
+    uint8_t* m_szMarker;
+
+    uint16_t m_lastOutboundMessage;
+
+    bool (*AdvanceState)(void);
+    void (*Initialize)(void* szMarker, void* phy, void* app, void* state );
+    //bool (*SendProtocolMessage)( const void* msg );
+    bool (*SendProtocolMessage)( uint32_t cmd, uint32_t flags, uint32_t payloadSize, uint8_t* payload);
+
+}WP_Controller;
+
 // structure for Wire Protocol message
 // backwards compatible with .NETMF equivalent in names and types to help code reuse
 typedef struct WP_Message
@@ -103,21 +117,21 @@ typedef struct WP_Message
     uint8_t*       m_pos;
     uint16_t       m_size;
     int            m_rxState;
+
+    void (*Initialize)(WP_Controller* parent);
+    void (*PrepareReception)(void);
+    void (*PrepareRequest)(unsigned int cmd, unsigned int flags, unsigned int payloadSize, unsigned char* payload);
+    void (*PrepareReply)(const void** req, unsigned int flags, unsigned int payloadSize, unsigned char* payload);
+    void (*SetPayload)(unsigned char* payload);
+    void (*Release)(void);
+    bool (*Process)(void);
+
+    bool (*VerifyHeader)(void);
+    bool (*VerifyPayload)(void);
+    void (*ReplyBadPacket)(unsigned int flags);
+
 }WP_Message;
 
-typedef struct WP_Controller
-{
-    uint8_t* m_szMarker;
-
-    uint16_t m_lastOutboundMessage;
-
-    bool (*AdvanceState)(void);
-    //void (*Initialize)(LPCSTR szMarker, const WP_PhysicalLayer* phy, const WP_ApplicationLayer* app, void* state );
-    void (*Initialize)(void* szMarker, void* phy, void* app, void* state );
-    //bool (*SendProtocolMessage)( const void* msg );
-    bool (*SendProtocolMessage)( uint32_t cmd, uint32_t flags, uint32_t payloadSize, uint8_t* payload);
-
-}WP_Controller;
 
 // enum with flags for Monitor ping source and debugger flags
 // backwards compatible with .NETMF in debugger flags only
@@ -174,15 +188,4 @@ struct WP_CompileCheck
 
 typedef unsigned int       UINT32;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-    
-    UINT32 SUPPORT_ComputeCRC(const void* rgBlock, int nLength, UINT32 crc);
-
-#ifdef __cplusplus
-}
-#endif
-
 #endif // _WIREPROTOCOL_H_
-

@@ -5,16 +5,11 @@
 //
 
 #include <cmsis_os.h>
+#include <nanoHAL_v2.h>
 
 #include <WireProtocol_v2.h>
 #include <WireProtocol_MonitorCommands.h>
 #include <target_board.h>
-
-static const int AccessMemory_Check    = 0x00;
-static const int AccessMemory_Read     = 0x01;
-static const int AccessMemory_Write    = 0x02;
-static const int AccessMemory_Erase    = 0x03;
-static const int AccessMemory_Mask     = 0x0F;
 
 //////////////////////////////////////////////////////////////////////
 // helper functions
@@ -33,8 +28,30 @@ bool NanoBooter_GetReleaseInfo(ReleaseInfo* releaseInfo)
 
 static bool AccessMemory(uint32_t location, uint32_t lengthInBytes, uint8_t* buffer, int mode)
 {
-    
-    return true;
+    switch(mode)
+    {
+        case AccessMemory_Write:
+            // use FLASH driver to perform write operation
+            // this requires that HAL_USE_STM32_FLASH is set to TRUE on halconf_nf.h
+            return stm32FlashWrite(location, lengthInBytes, buffer);
+
+        case AccessMemory_Erase:
+            // erase using FLASH driver
+            // this requires that HAL_USE_STM32_FLASH is set to TRUE on halconf_nf.h
+            return stm32FlashErase(location);
+
+        case AccessMemory_Check:
+            // use FLASH driver to check is FLASH segment is erased
+            // this requires that HAL_USE_STM32_FLASH is set to TRUE on halconf_nf.h
+            return stm32FlashIsErased(location, lengthInBytes);
+
+        ///////////////////////////////////
+        // modes NOT supported
+        case AccessMemory_Read:
+        default:
+            // default return is FALSE
+            return false;
+    }
 }
 
 ////////////////////////////////////////////////////
@@ -113,3 +130,56 @@ bool Monitor_Reboot(WP_Message* message)
     return true;
 }
 
+bool Monitor_EraseMemory(WP_Message* message)
+{
+    bool ret = false;
+    
+    CLR_DBG_Commands_Monitor_EraseMemory* cmd = (CLR_DBG_Commands_Monitor_EraseMemory*)message->m_payload;
+
+    // TODO: not sure if we really need this
+    // nanoBooter_OnStateChange( State_MemoryErase, (void*)cmd->m_address );
+    
+    ret = AccessMemory(cmd->address, cmd->length, NULL, AccessMemory_Erase);
+
+    ReplyToCommand(message, ret, false, NULL, 0);
+        
+    return ret;
+}
+
+bool Monitor_CheckMemory(WP_Message* message)
+{
+    bool ret = false;
+
+    CLR_DBG_Commands_Monitor_CheckMemory* cmd = (CLR_DBG_Commands_Monitor_CheckMemory*)message->m_payload;
+    CLR_DBG_Commands_Monitor_CheckMemory_Reply cmdReply;
+
+    ret = AccessMemory(cmd->address, cmd->length, (uint8_t*)&cmdReply.crc, AccessMemory_Check);
+
+    ReplyToCommand(message, ret, false, &cmdReply, sizeof(cmdReply));
+
+    return ret;
+}
+
+bool Monitor_MemoryMap(WP_Message* message)
+{
+    MemoryMap_Range map[2];
+
+    // if(m_signedDataState.CheckDirty())
+    // {
+    //     m_signedDataState.EraseMemoryAndReset();
+        
+    //     return false;
+    // }
+
+    map[0].m_address = HalSystemConfig.RAM1.Base;
+    map[0].m_length  = HalSystemConfig.RAM1.Size;
+    map[0].m_flags   = Monitor_MemoryMap_c_RAM;
+
+    map[1].m_address = HalSystemConfig.FLASH1.Base;
+    map[1].m_length  = HalSystemConfig.FLASH1.Size;
+    map[1].m_flags   = Monitor_MemoryMap_c_FLASH;
+
+    ReplyToCommand(message, true, false, map, sizeof(map));
+
+    return true;
+}

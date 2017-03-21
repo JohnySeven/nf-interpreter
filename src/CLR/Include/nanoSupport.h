@@ -6,7 +6,18 @@
 #ifndef _SUPPORT_NANOSUPPORT_H_
 #define _SUPPORT_NANOSUPPORT_H_
 
+typedef unsigned int       UINT32;
+
+
+#if defined(__cplusplus) && !(defined(_WIN32) || defined(WIN32))
+extern "C" {
+#endif
+
 UINT32 SUPPORT_ComputeCRC(const void* rgBlock, int nLength, UINT32 crc);
+
+#if defined(__cplusplus) && !(defined(_WIN32) || defined(WIN32))
+}
+#endif
 
 //typedef BOOL (*WRITE_MEMORY_FUNCT)( UINT32 Address, UINT32 NumBytes, const BYTE * pSectorBuff );
 //typedef BOOL (*READ_MEMORY_FUNCT) ( UINT32 Address, UINT32 NumBytes, BYTE * pSectorBuff );

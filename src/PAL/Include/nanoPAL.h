@@ -6,7 +6,9 @@
 #ifndef _NANOPAL_H_
 #define _NANOPAL_H_ 1
 
-//#include <nanoHAL_types.h>
+//#include <nanoHAL_Types.h>
+
+#include <nanoPAL_Time.h>
 
 //#include <AsyncProcCalls_decl.h>
 
@@ -130,17 +132,17 @@ struct HAL_COMPLETION : public HAL_CONTINUATION
 //#include <BatteryMeasurement_decl.h>
 
 //#include <COM_decl.h>
-BOOL DebuggerPort_Initialize(COM_HANDLE ComPortNum);
-BOOL DebuggerPort_Uninitialize(COM_HANDLE ComPortNum);
+__nfweak BOOL DebuggerPort_Initialize(COM_HANDLE ComPortNum);
+__nfweak BOOL DebuggerPort_Uninitialize(COM_HANDLE ComPortNum);
 
 // max retries is the number of retries if the first attempt fails, thus the maximum
 // total number of attempts is maxRretries + 1 since it always tries at least once.
-int  DebuggerPort_Write(COM_HANDLE ComPortNum, const char* Data, size_t size, int maxRetries = 99);
-int  DebuggerPort_Read(COM_HANDLE ComPortNum, char* Data, size_t size);
-BOOL DebuggerPort_Flush(COM_HANDLE ComPortNum);
-BOOL DebuggerPort_IsSslSupported(COM_HANDLE ComPortNum);
-BOOL DebuggerPort_UpgradeToSsl(COM_HANDLE ComPortNum, UINT32 flags);
-BOOL DebuggerPort_IsUsingSsl(COM_HANDLE ComPortNum);
+__nfweak int  DebuggerPort_Write(COM_HANDLE ComPortNum, const char* Data, size_t size, int maxRetries = 99);
+__nfweak int  DebuggerPort_Read(COM_HANDLE ComPortNum, char* Data, size_t size);
+__nfweak BOOL DebuggerPort_Flush(COM_HANDLE ComPortNum);
+__nfweak BOOL DebuggerPort_IsSslSupported(COM_HANDLE ComPortNum);
+__nfweak BOOL DebuggerPort_UpgradeToSsl(COM_HANDLE ComPortNum, UINT32 flags);
+__nfweak BOOL DebuggerPort_IsUsingSsl(COM_HANDLE ComPortNum);
 
 //
 //#include <Display_decl.h>
@@ -234,82 +236,82 @@ enum POWER_LEVEL
 
 //#include <Time_decl.h>
 
-#define TIME INT64
-
-#define TIME_CONVERSION__TO_MILLISECONDS    10000
-#define TIME_CONVERSION__TO_SECONDS         10000000
-#define TIME_CONVERSION__TICKUNITS         10000
-#define TIME_CONVERSION__ONESECOND         1
-#define TIME_CONVERSION__ONEMINUTE         60
-#define TIME_CONVERSION__ONEHOUR           3600
-#define TIME_CONVERSION__ONEDAY            86400
-
-#define TIMEOUT_ZERO      LONGLONGCONSTANT(0x0000000000000000)
-#define TIMEOUT_INFINITE  LONGLONGCONSTANT(0x7FFFFFFFFFFFFFFF)
-
-#define TIME_ZONE_OFFSET    ((INT64)Time_GetTimeZoneOffset() * 600000000)
-
-/// <summary>
-/// Initializes PAL Time drivers, must be called before any of the Time_* PAL
-/// methods could be used.
-/// </summary>
-HRESULT    Time_Initialize  (                     );
-
-/// <summary>
-/// UTC time according to this system. 
-/// </summary>
-/// <returns>Returns current UTC time in 100ns elapsed since 1/1/1601:00:00:00.000 UTC.</returns>
-INT64       Time_GetUtcTime();
-
-/// <summary>
-/// Local time according to the Time subsystem.
-/// </summary>
-/// <returns>Local time in 100ns elapsed since 1/1/1601:00:00:00.000 local time.</returns>
-INT64       Time_GetLocalTime();
-
-/// <summary>
-/// Offset from GMT.
-/// </summary>
-/// <returns>In minutes, for example Pacific Time would be GMT-8 = -480.</returns>
-INT32 Time_GetTimeZoneOffset();
-
-/// <summary>
-/// Retrieves time since device was booted.
-/// </summary>
-/// <returns>Time in 100ns.</returns>
-INT64 Time_GetMachineTime();
-
-/// <summary>
-/// Converts 64bit time value to SystemTime structure. 64bit time is assumed as an offset from 1/1/1601:00:00:00.000 in 100ns.
-/// </summary>
-/// <returns>True if conversion is successful.</returns>
-BOOL       Time_ToSystemTime(TIME time, SYSTEMTIME* systemTime);
-
-/// <summary>
-/// Retrieves number of days given a month and a year. Calculates for leap years.
-/// </summary>
-/// <returns>S_OK if successful.</returns>
-HRESULT    Time_DaysInMonth(INT32 year, INT32 month, INT32* days);
-
-/// <summary>
-/// Retrieves number of days since the beginning of the year given a month and a year. Calculates for leap years.
-/// </summary>
-/// <returns>S_OK if successful.</returns>
-HRESULT    Time_AccDaysInMonth(INT32 year, INT32 month, INT32* days);
-
-/// <summary>
-/// Converts SystemTime structure to 64bit time, which is assumed as an offset from 1/1/1601:00:00:00.000 in 100ns.
-/// </summary>
-/// <returns>Time value.</returns>
-TIME       Time_FromSystemTime(const SYSTEMTIME* systemTime);
-
-/// APIs to convert between types
-BOOL       Time_TimeSpanToStringEx(const INT64& ticks, LPSTR& buf, size_t& len);
-LPCSTR     Time_CurrentDateTimeToString();
 
 
 
-INT64   HAL_Time_CurrentTime();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //#include <TimeService_decl.h>
 //#include <TouchPanel_decl.h>
@@ -377,12 +379,13 @@ int hal_strncmp_s( const char* str1, const char* str2, size_t num );
 //#include <Analog_decl.h>
 //#include <AnalogOut_decl.h>
 //
-#include "Blockstorage_decl.h"
+#include "BlockStorage_decl.h"
 
 //#include <SD_decl.h>
 
 //#include "..\pal\Diagnostics\Native_Profiler.h"
 // native profiler
 #define NATIVE_PROFILE_PAL_HEAP()
+#define NATIVE_PROFILE_PAL_CRT()
 
 #endif // _NANOPAL_H_

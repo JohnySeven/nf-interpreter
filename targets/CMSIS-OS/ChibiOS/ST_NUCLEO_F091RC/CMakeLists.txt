@@ -24,8 +24,13 @@ find_package(WireProtocol REQUIRED)
 # packages for nanoFramework libraries
 # mandatory 
 find_package(NF_CoreCLR REQUIRED)
-find_package(NF_Debugger REQUIRED)
-find_package(NF_WireProtocol REQUIRED)
+
+# nF feature: debugger
+if(NF_FEATURE_DEBUGGER)
+    find_package(NF_Debugger REQUIRED)
+    find_package(NF_WireProtocol REQUIRED)
+    else()
+endif()
 
 # optional
 
@@ -41,6 +46,8 @@ add_subdirectory("nanoCLR")
 add_executable(
     # executables for project, project sources
     ${NANOBOOTER_PROJECT_NAME}.elf
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/target_common.c"
 
     ${COMMON_PROJECT_SOURCES}
     ${NANOBOOTER_PROJECT_SOURCES}
@@ -63,8 +70,10 @@ add_executable(
 add_executable(
     # executables for project, project sources
     ${NANOCLR_PROJECT_NAME}.elf
+    
+    "${CMAKE_CURRENT_SOURCE_DIR}/target_common.c"
 
-    # ${COMMON_PROJECT_SOURCES}
+    ${COMMON_PROJECT_SOURCES}
     ${NANOCLR_PROJECT_SOURCES}
 
     ${TARGET_CMSIS_COMMON_SOURCES}
@@ -76,7 +85,7 @@ add_executable(
     ${CHIBIOS_SOURCES}
     ${ChibiOSnfOverlay_SOURCES}
 
-    # ${WireProtocol_SOURCES}
+    ${WireProtocol_SOURCES}
 
     # sources for nanoFramework libraries
     "${NF_CoreCLR_SOURCES}"
@@ -90,7 +99,9 @@ include_directories(
     "${CMAKE_CURRENT_BINARY_DIR}"
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/common
-
+    ${PROJECT_SOURCE_DIR}/src/CLR/Include
+    ${PROJECT_SOURCE_DIR}/src/HAL/Include
+    
     ${WireProtocol_INCLUDE_DIRS}
     ${CHIBIOS_INCLUDE_DIRS}
     ${ChibiOSnfOverlay_INCLUDE_DIRS}
@@ -122,15 +133,11 @@ target_include_directories(${NANOCLR_PROJECT_NAME}.elf PUBLIC
     "${NF_WireProtocol_INCLUDE_DIRS}"
 )
 
-############################################################
-# use default linker options and linker file for nanoBooter
-CHIBIOS_SET_LINKER_OPTIONS(${NANOBOOTER_PROJECT_NAME}.elf)
-############################################################
-
-#######################################################
-# need to use a specific linker file for nanoCLR
-CHIBIOS_SET_LINKER_OPTIONS_AND_FILE(${NANOCLR_PROJECT_NAME}.elf ${CMAKE_CURRENT_SOURCE_DIR}/nanoCLR/STM32F091xC.ld)
-#######################################################
+###################
+# set linker files
+CHIBIOS_SET_LINKER_OPTIONS_AND_FILE(${NANOBOOTER_PROJECT_NAME}.elf ${CMAKE_CURRENT_SOURCE_DIR}/nanoBooter/STM32F091xC_booter.ld)
+CHIBIOS_SET_LINKER_OPTIONS_AND_FILE(${NANOCLR_PROJECT_NAME}.elf ${CMAKE_CURRENT_SOURCE_DIR}/nanoCLR/STM32F091xC_CLR.ld)
+###################
 
 CHIBIOS_ADD_HEX_BIN_DUMP_TARGETS(${NANOBOOTER_PROJECT_NAME}.elf)
 CHIBIOS_ADD_HEX_BIN_DUMP_TARGETS(${NANOCLR_PROJECT_NAME}.elf)
@@ -163,7 +170,7 @@ set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf APPEND_STRING PROPERTY LINK_FLAG
 # the size of the CLR managed heap is defined here
 ###################################################
 set_property(TARGET ${NANOBOOTER_PROJECT_NAME}.elf APPEND_STRING PROPERTY LINK_FLAGS ",--library-path=${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/common,--defsym=__main_stack_size__=0x400,--defsym=__process_stack_size__=0x400,--defsym=__clr_managed_heap_size__=0x0")
-set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf APPEND_STRING PROPERTY LINK_FLAGS ",--library-path=${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/common,--defsym=__main_stack_size__=0x400,--defsym=__process_stack_size__=0x400,--defsym=__clr_managed_heap_size__=0x3900")
+set_property(TARGET ${NANOCLR_PROJECT_NAME}.elf APPEND_STRING PROPERTY LINK_FLAGS ",--library-path=${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/common,--defsym=__main_stack_size__=0x400,--defsym=__process_stack_size__=0x400,--defsym=__clr_managed_heap_size__=0x2000")
 
 
 set(NANOBOOTER_HEX_FILE ${PROJECT_SOURCE_DIR}/build/${NANOBOOTER_PROJECT_NAME}.hex)

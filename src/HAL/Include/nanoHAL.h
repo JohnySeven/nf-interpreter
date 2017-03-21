@@ -10,7 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-
+#include <nanoWeak.h>
+#include <nanoHAL_v2.h>
 
 
 
@@ -36,18 +37,6 @@
 #include <targetHAL.h>
 #include <nanoHAL_Types.h>
 #include <nanoHAL_ReleaseInfo.h>
-
-// definition of WEAK attribute for stub functions
-#if defined(_MSC_VER)
-// because VC++ doesn't support this attribute it's definition end up being an empty one
-#define __nfweak
-
-#elif defined(__GNUC__)
-#define __nfweak __attribute__((weak))
-
-#else
-#error "Unknow platform. Please add definition for weak attribute."
-#endif
 
 //#if !defined(_WIN32) && !defined(FIQ_SAMPLING_PROFILER) && !defined(HAL_REDUCESIZE) && defined(PROFILE_BUILD)
 //#define ENABLE_NATIVE_PROFILER
@@ -181,41 +170,41 @@ struct GPIO_FLAG
 
 
 
-// COM_HANDLE Defines a type representing both a port type or "transport" and a port number
-// The COM_HANDLE is a multi bit field value with the following bit fields usage
-//    |--------+--------+--------+--------|
-//    |33222222|22221111|111111  |        |
-//    |10987654|32109876|54321098|76543210| bit position
-//    |--------+--------+--------+--------|
-//    |00000000|00000000|TTTTTTTT|pppppppp| ( transport != USB_TRANSPORT )
-//    |--------+--------+--------+--------|
-//    |00000000|00000000|TTTTTTTT|cccppppp| ( transport == USB_TRANSPORT )
-//    |--------+--------+--------+--------|
-// 
-// where:
-//    T => Transport type
-//              USART_TRANSPORT => 1
-//                USB_TRANSPORT => 2
-//             SOCKET_TRANSPORT => 3
-//              DEBUG_TRANSPORT => 4
-//                LCD_TRANSPORT => 5
-//        FLASH_WRITE_TRANSPORT => 6
-//          MESSAGING_TRANSPORT => 7
-//            GENERIC_TRANSPORT => 8
-//    p => port instance number 
-//        Port instances in the handle are 1 based. (e.g. p == 0 is invalid except when T == 0 )
-//    c -> Controller instance number ( USB_TRANSPORT only )
-//
-//    NULL_PORT => T==0 && p == 0
-//
-// GENERIC_TRANSPORT is any custom port that isn't one of the above, they 
-// are implemented for the DebugPort_xxxx APIs and the port number is 
-// an index into a const global table of port interfaces (structure of
-// function pointers) These allow custom extensions to the normal transports
-// without needing to continue defining additional transport types and modifying
-// switch on transport code. To keep compatibility high and code churn low, the
-// previous legacy transports remain though they should be considered deprecated.
-typedef INT32 COM_HANDLE;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #define TRANSPORT_SHIFT             8
 #define TRANSPORT_MASK              (0xFF << TRANSPORT_SHIFT)
@@ -370,51 +359,17 @@ typedef UINT32 FLASH_WORD;
 
 
 
-struct HAL_DRIVER_CONFIG_HEADER
-{
-    UINT32 Enable;
-};
 
-struct HAL_SYSTEM_MEMORY_CONFIG
-{
-    UINT32 Base;
-    UINT32 Size;
-};
 
-struct HAL_SYSTEM_CONFIG
-{
-    static const UINT32 c_MaxDebuggers = 1;
-    static const UINT32 c_MaxMessaging = 1;
 
-    HAL_DRIVER_CONFIG_HEADER Header;
 
-    //--//
 
-    COM_HANDLE               DebuggerPorts[c_MaxDebuggers];
-    COM_HANDLE               MessagingPorts[c_MaxMessaging];
-    // communication channel for debug messages in the debugger
-    // which may be VS, MFDEPLOY, etc... Accessed via debug_printf
-    // in the HAL/PAL and System.Diagnostics.Debug.Print() in managed
-    // applications
-    COM_HANDLE               DebugTextPort;
 
-    UINT32                   USART_DefaultBaudRate;
-    // internal HAL/PAL debug/tracing channel, this is separate
-    // to allow tracing messages in the driver that implements
-    // the transport for the Debugger and DebugTextPort. This
-    // channel is accessed via hal_printf() in the HAL/PAL
-    COM_HANDLE               stdio;
 
-    HAL_SYSTEM_MEMORY_CONFIG RAM1;
-    HAL_SYSTEM_MEMORY_CONFIG FLASH1;
 
-    //--//
 
-    static LPCSTR GetDriverName() { return "HAL_SYSTEM"; }
-};
 
 
-extern HAL_SYSTEM_CONFIG  HalSystemConfig;
 
 
 
@@ -542,6 +497,46 @@ extern HAL_SYSTEM_CONFIG  HalSystemConfig;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+typedef void (*LOGGING_CALLBACK)(LPCSTR text);
 
 
 
