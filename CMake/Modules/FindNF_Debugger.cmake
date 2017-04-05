@@ -16,7 +16,11 @@ set(NF_Debugger_SRCS
     Debugger_full.cpp
 
     Messaging.cpp
-    WireProtocol.cpp
+    
+    WireProtocol_Message.c
+    WireProtocol_MonitorCommands.c
+    WireProtocol_HAL_Interface.c
+    WireProtocol_App_Interface.c
 
     nanoSupport_CRC32.c
 )

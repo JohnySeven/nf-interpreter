@@ -4,7 +4,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
-#include <WireProtocol_v2.h>
+#include <WireProtocol.h>
 #include <WireProtocol_Message.h>
 #include <WireProtocol_MonitorCommands.h>
 
@@ -29,7 +29,7 @@ static const CommandHandlerLookup c_Lookup_Request[] =
     // //
     // DEFINE_CMD(CheckSignature),
     // //
-    // DEFINE_CMD(FlashSectorMap    ),
+    DEFINE_CMD(FlashSectorMap),
     // DEFINE_CMD(SignatureKeyUpdate),
     
     DEFINE_CMD(OemInfo),
@@ -102,14 +102,14 @@ bool WP_App_ProcessPayload(WP_Message* message)
             // execute command handler and save the result
             bool commandHandlerExecuteResult = ((bool* (*)(WP_Message*))cmd->handler)(message);
 
-            ReplyToCommand(message, commandHandlerExecuteResult, false, NULL, 0);
+            WP_ReplyToCommand(message, commandHandlerExecuteResult, false, NULL, 0);
             return true;
         }
 
         cmd++;
     }
 
-    ReplyToCommand(message, false, false, NULL, 0);
+    WP_ReplyToCommand(message, false, false, NULL, 0);
 
     return true;    
 }

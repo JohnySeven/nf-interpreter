@@ -36,9 +36,7 @@ void BlinkerThread(void const * argument)
       
       palClearPad(GPIOD, GPIOD_LED4);
   }
-  
   // nothing to deinitialize or cleanup, so it's safe to return
-  return 0;
 }
 osThreadDef(BlinkerThread, osPriorityNormal, 128);
 
@@ -59,7 +57,7 @@ int main(void) {
   // the board to remain in nanoBooter and not launching nanoCLR
 
   // if the USER button (blue one) is pressed, skip the check for a valid CLR image and remain in booter
-  if (palReadPad(GPIOA, GPIOA_BUTTON))
+  if (!palReadPad(GPIOA, GPIOA_BUTTON))
   {
     // check for valid CLR image 
     if(CheckValidCLRImage((uint32_t)&__nanoImage_end__))

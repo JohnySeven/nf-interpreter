@@ -7,7 +7,7 @@
 #include <cmsis_os.h>
 #include <nanoHAL_v2.h>
 
-#include <WireProtocol_v2.h>
+#include <WireProtocol.h>
 #include <WireProtocol_MonitorCommands.h>
 #include <target_board.h>
 
@@ -63,7 +63,7 @@ bool Monitor_Ping(WP_Message* message)
         Monitor_Ping_Reply cmdReply;
         cmdReply.m_source = Monitor_Ping_c_Ping_Source_NanoBooter;
 
-        ReplyToCommand(message, true, false, &cmdReply, sizeof(cmdReply));
+        WP_ReplyToCommand(message, true, false, &cmdReply, sizeof(cmdReply));
     }
 
     return true;
@@ -77,7 +77,7 @@ bool Monitor_OemInfo(WP_Message* message)
         
         bool fOK = NanoBooter_GetReleaseInfo(&cmdReply.m_releaseInfo) == true;
         
-        ReplyToCommand(message, fOK, false, &cmdReply, sizeof(cmdReply));
+        WP_ReplyToCommand(message, fOK, false, &cmdReply, sizeof(cmdReply));
     }
 
     return true;
@@ -103,7 +103,7 @@ bool Monitor_WriteMemory(WP_Message* message)
     // assume at RAM, directly use the original address 
     ret = AccessMemory(cmd->address, cmd->length, cmd->data, AccessMemory_Write);
   
-    ReplyToCommand(message, ret, false, NULL, 0);
+    WP_ReplyToCommand(message, ret, false, NULL, 0);
 
     return ret;
 }
@@ -112,7 +112,7 @@ bool Monitor_Reboot(WP_Message* message)
 {
     Monitor_Reboot_Command* cmd = (Monitor_Reboot_Command*)message->m_payload;
 
-    ReplyToCommand(message, true, false, NULL, 0);
+    WP_ReplyToCommand(message, true, false, NULL, 0);
 
     if(cmd != NULL)
     {
@@ -141,7 +141,7 @@ bool Monitor_EraseMemory(WP_Message* message)
     
     ret = AccessMemory(cmd->address, cmd->length, NULL, AccessMemory_Erase);
 
-    ReplyToCommand(message, ret, false, NULL, 0);
+    WP_ReplyToCommand(message, ret, false, NULL, 0);
         
     return ret;
 }
@@ -155,7 +155,7 @@ bool Monitor_CheckMemory(WP_Message* message)
 
     ret = AccessMemory(cmd->address, cmd->length, (uint8_t*)&cmdReply.crc, AccessMemory_Check);
 
-    ReplyToCommand(message, ret, false, &cmdReply, sizeof(cmdReply));
+    WP_ReplyToCommand(message, ret, false, &cmdReply, sizeof(cmdReply));
 
     return ret;
 }
@@ -179,7 +179,76 @@ bool Monitor_MemoryMap(WP_Message* message)
     map[1].m_length  = HalSystemConfig.FLASH1.Size;
     map[1].m_flags   = Monitor_MemoryMap_c_FLASH;
 
-    ReplyToCommand(message, true, false, map, sizeof(map));
+    WP_ReplyToCommand(message, true, false, map, sizeof(map));
 
     return true;
+}
+
+bool Monitor_FlashSectorMap(WP_Message* message)
+{
+    struct Flash_Sector
+    {
+        uint32_t Start;
+        uint32_t Length;
+        uint32_t Usage;
+    
+    } *pData = NULL;
+
+    uint32_t rangeCount = 0;
+    uint32_t rangeIndex = 0;
+
+//    for(int count = 0; count < 2; count++)
+//    {
+//        BlockStorageDevice* device = BlockStorageList_GetFirstDevice();
+
+//        if(device == NULL)
+//        {
+            WP_ReplyToCommand(message, true, false, NULL, 0);
+            return false;
+//        }
+
+//        if(count == 1)
+//        {
+//            pData = (struct Flash_Sector*)platform_malloc(rangeCount * sizeof(struct Flash_Sector));
+
+//            if(pData == NULL)
+//            {
+//                WP_ReplyToCommand(message, true, false, NULL, 0);
+//                return false;
+//            }
+//        }
+
+//        do
+//        {
+//            const DeviceBlockInfo* deviceInfo = device->GetDeviceInfo(device);
+
+//            for(int i = 0; i < deviceInfo->NumRegions;  i++)
+//            {
+//                const BlockRegionInfo* pRegion = &deviceInfo->Regions[ i ];
+                
+//                for(int j = 0; j < pRegion->NumBlockRanges; j++)
+//                {
+                    
+//                    if(count == 0)
+//                    {
+//                        rangeCount++;    
+//                    }
+//                    else
+//                    {
+//                        pData[ rangeIndex ].Start  = 0; //pRegion->BlockRegionInfo_BlockAddress( pRegion->BlockRanges[ j ].StartBlock );
+//                        pData[ rangeIndex ].Length = 0; //pRegion->BlockRanges[ j ].GetBlockCount() * pRegion->BytesPerBlock;
+//                        pData[ rangeIndex ].Usage  = 0; //pRegion->BlockRanges[ j ].RangeType & BlockRange_USAGE_MASK;
+//                        rangeIndex++;
+//                    }
+//                }
+//            }
+//        }
+//        while(device = BlockStorageList_GetNextDevice( *device ));
+//    }
+
+//    WP_ReplyToCommand(message, true, false, (void*)pData, rangeCount * sizeof (struct Flash_Sector) );
+
+//    platform_free(pData);
+
+//    return true;
 }

@@ -4,19 +4,18 @@
 // See LICENSE file in the project root for full license information.
 //
 
-#include <nanoHAL_Time.h>
 #include <nanoSupport.h>
 #include "WireProtocol_Message.h"
 
 uint8_t receptionBuffer[2048];
 static uint16_t lastOutboundMessage;
-uint32_t m_payloadTicks;
+// FIXME #146 uint32_t m_payloadTicks;
 static uint8_t* marker;
 
 //////////////////////////////////////////
 // helper functions
 
-void ReplyToCommand(WP_Message* message, bool fSuccess, bool fCritical, void* ptr, int size)
+void WP_ReplyToCommand(WP_Message* message, bool fSuccess, bool fCritical, void* ptr, int size)
 {
     WP_Message msgReply;
     uint32_t     flags = 0;
@@ -244,7 +243,7 @@ bool WP_Message_Process(WP_Message* message)
                             }
                             else
                             {
-                                m_payloadTicks = HAL_Time_CurrentSysTicks();
+                                // FIXME #146 m_payloadTicks = HAL_Time_CurrentSysTicks();
                                 message->m_rxState = ReceiveState_ReadingPayload;
                                 message->m_pos     = message->m_payload;
                                 message->m_size    = message->m_header.m_size;
@@ -302,4 +301,18 @@ bool WP_Message_Process(WP_Message* message)
                 return false;
         }
     }
+}
+
+void WP_SendProtocolMessage(WP_Message *message)
+{
+    WP_TransmitMessage(&message);
+}
+
+void WP_PrepareAndSendProtocolMessage(uint32_t cmd, uint32_t payloadSize, uint8_t* payload, uint32_t flags)
+{
+    WP_Message message;
+    WP_Message_Initialize(&message);
+    WP_Message_PrepareRequest(&message, cmd, flags, payloadSize, payload);
+
+    WP_TransmitMessage(&message);
 }

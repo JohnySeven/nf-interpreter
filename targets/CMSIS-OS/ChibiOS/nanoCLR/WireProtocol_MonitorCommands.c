@@ -4,7 +4,7 @@
 // See LICENSE file in the project root for full license information.
 //
 
-#include "WireProtocol_v2.h"
+#include "WireProtocol.h"
 #include "WireProtocol_MonitorCommands.h"
 #include <target_board.h>
 
@@ -33,7 +33,7 @@ bool Monitor_Ping(WP_Message* message)
         Monitor_Ping_Reply cmdReply;
         cmdReply.m_source = Monitor_Ping_c_Ping_Source_NanoCLR;
 
-        ReplyToCommand(message, true, false, &cmdReply, sizeof(cmdReply));
+        WP_ReplyToCommand(message, true, false, &cmdReply, sizeof(cmdReply));
     }
 
     return true;
@@ -47,9 +47,8 @@ bool Monitor_OemInfo(WP_Message* message)
         
         bool fOK = NanoCLR_GetReleaseInfo(&cmdReply.m_releaseInfo) == true;
         
-        ReplyToCommand(message, fOK, false, &cmdReply, sizeof(cmdReply));
+        WP_ReplyToCommand(message, fOK, false, &cmdReply, sizeof(cmdReply));
     }
 
     return true;
 }
-
