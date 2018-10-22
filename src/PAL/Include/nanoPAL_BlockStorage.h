@@ -117,7 +117,7 @@ typedef enum BlockUsage
 #define BlockRange_BLOCKTYPE_RESERVED   (BlockRange_RESERVED)
 #define BlockRange_BLOCKTYPE_DIRTYBIT   (                            BlockRange_RESERVED |       BlockRange_DATATYPE_RAW         | BlockUsage_CONFIG)    
 // Configuration data that contains all the unique data 
-#define BlockRange_BLOCKTYPE_CONFIG     (BlockRange_ATTRIB_PRIMARY | BlockRange_RESERVED |       BlockRange_DATATYPE_RAW        | BlockUsage_CONFIG)     
+#define BlockRange_BLOCKTYPE_CONFIG     (BlockRange_ATTRIB_PRIMARY | BlockRange_RESERVED |       BlockRange_DATATYPE_RAW         | BlockUsage_CONFIG)     
 
 // Boot loader and boot strap code
 #define BlockRange_BLOCKTYPE_BOOTSTRAP  (BlockRange_EXECUTABLE     | BlockRange_RESERVED |       BlockRange_DATATYPE_NATIVECODE  | BlockUsage_BOOTSTRAP)  
@@ -203,16 +203,17 @@ typedef enum MediaAttribute
 extern "C" {
 #endif
 
-__nfweak SectorAddress DeviceBlockInfo_PhysicalToSectorAddress(DeviceBlockInfo* blockInfo, const BlockRegionInfo* pRegion, ByteAddress phyAddress);
-__nfweak bool DeviceBlockInfo_FindRegionFromAddress(DeviceBlockInfo* blockInfo, ByteAddress address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
-__nfweak bool DeviceBlockInfo_FindForBlockUsage(DeviceBlockInfo* blockInfo, unsigned int blockUsage, unsigned int* address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
-__nfweak bool DeviceBlockInfo_FindNextUsageBlock(DeviceBlockInfo* blockInfo, unsigned int blockUsage, unsigned int* address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
+ SectorAddress DeviceBlockInfo_PhysicalToSectorAddress(DeviceBlockInfo* blockInfo, const BlockRegionInfo* pRegion, ByteAddress phyAddress);
+ bool DeviceBlockInfo_FindRegionFromAddress(DeviceBlockInfo* blockInfo, ByteAddress address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
+ bool DeviceBlockInfo_FindForBlockUsage(DeviceBlockInfo* blockInfo, unsigned int blockUsage, unsigned int* address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
+ bool DeviceBlockInfo_FindNextUsageBlock(DeviceBlockInfo* blockInfo, unsigned int blockUsage, unsigned int* address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
 
 #ifdef __cplusplus
 }
 #endif
 
-typedef struct DEVICEBLOCKINFO
+//typedef struct DEVICEBLOCKINFO
+struct DEVICEBLOCKINFO
 {
     MediaAttribute Attribute;
 
@@ -404,45 +405,42 @@ struct IBLOCKSTORAGEDEVICE
     void (*SetPowerState)(void*, unsigned int state);
 };
 
-/////////////////////////////////////////////////////////////////////
-typedef struct BLOCKSTORAGEDEVICE BlockStorageDevice;
+typedef struct BLOCKSTORAGEDEVICE
+{
+    // from templace class HAL_DblLinkedNode<BlockStorageDevice>
+    struct BLOCKSTORAGEDEVICE* m_nextNode;
+    struct BLOCKSTORAGEDEVICE* m_prevNode;
 
+    IBlockStorageDevice* m_BSD;
+    void*                m_context;
+}BlockStorageDevice;
+
+/////////////////////////////////////////////////////////////////////
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-__nfweak BlockStorageDevice* BlockStorageDevice_Next(BlockStorageDevice* device);
-__nfweak BlockStorageDevice* BlockStorageDevice_Prev(BlockStorageDevice* device);
-__nfweak bool BlockStorageDevice_InitializeDevice(BlockStorageDevice* device);
-__nfweak bool BlockStorageDevice_UninitializeDevice(BlockStorageDevice* device);
-__nfweak DeviceBlockInfo* BlockStorageDevice_GetDeviceInfo(BlockStorageDevice* device);
-__nfweak bool BlockStorageDevice_Read(BlockStorageDevice* device, unsigned int startAddress, unsigned int numBytes, unsigned char* buffer);
-__nfweak bool BlockStorageDevice_Write(BlockStorageDevice* device, unsigned int startAddress, unsigned int numBytes, unsigned char* buffer, bool readModifyWrite);
-__nfweak bool BlockStorageDevice_Memset(BlockStorageDevice* device, unsigned int startAddress, unsigned char buffer, unsigned int numBytes);
-//__nfweak bool BlockStorageDevice_GetSectorMetadata(BlockStorageDevice* device, unsigned int sectorStart, SectorMetadata* pSectorMetadata);
-//__nfweak bool BlockStorageDevice_SetSectorMetadata(BlockStorageDevice* device, unsigned int sectorStart, SectorMetadata* pSectorMetadata);
-__nfweak bool BlockStorageDevice_IsBlockErased(BlockStorageDevice* device, unsigned int blockStartAddress, unsigned int length);
-__nfweak bool BlockStorageDevice_EraseBlock(BlockStorageDevice* device, unsigned int address);
-__nfweak void BlockStorageDevice_SetPowerState(BlockStorageDevice* device, unsigned int state);
-__nfweak bool BlockStorageDevice_FindRegionFromAddress(BlockStorageDevice* device, unsigned int address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
-__nfweak bool BlockStorageDevice_FindForBlockUsage(BlockStorageDevice* device, unsigned int blockUsage, unsigned int* address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
-__nfweak bool BlockStorageDevice_FindNextUsageBlock(BlockStorageDevice* device, unsigned int blockUsage, unsigned int* address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
-__nfweak unsigned int BlockStorageDevice_MaxSectorWrite_uSec(BlockStorageDevice* device);
-__nfweak unsigned int BlockStorageDevice_MaxBlockErase_uSec(BlockStorageDevice* device);
+ BlockStorageDevice* BlockStorageDevice_Next(BlockStorageDevice* device);
+ BlockStorageDevice* BlockStorageDevice_Prev(BlockStorageDevice* device);
+ bool BlockStorageDevice_InitializeDevice(BlockStorageDevice* device);
+ bool BlockStorageDevice_UninitializeDevice(BlockStorageDevice* device);
+ DeviceBlockInfo* BlockStorageDevice_GetDeviceInfo(BlockStorageDevice* device);
+ bool BlockStorageDevice_Read(BlockStorageDevice* device, unsigned int startAddress, unsigned int numBytes, unsigned char* buffer);
+ bool BlockStorageDevice_Write(BlockStorageDevice* device, unsigned int startAddress, unsigned int numBytes, unsigned char* buffer, bool readModifyWrite);
+ bool BlockStorageDevice_Memset(BlockStorageDevice* device, unsigned int startAddress, unsigned char buffer, unsigned int numBytes);
+// bool BlockStorageDevice_GetSectorMetadata(BlockStorageDevice* device, unsigned int sectorStart, SectorMetadata* pSectorMetadata);
+// bool BlockStorageDevice_SetSectorMetadata(BlockStorageDevice* device, unsigned int sectorStart, SectorMetadata* pSectorMetadata);
+ bool BlockStorageDevice_IsBlockErased(BlockStorageDevice* device, unsigned int blockStartAddress, unsigned int length);
+ bool BlockStorageDevice_EraseBlock(BlockStorageDevice* device, unsigned int address);
+ void BlockStorageDevice_SetPowerState(BlockStorageDevice* device, unsigned int state);
+ bool BlockStorageDevice_FindRegionFromAddress(BlockStorageDevice* device, unsigned int address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
+ bool BlockStorageDevice_FindForBlockUsage(BlockStorageDevice* device, unsigned int blockUsage, unsigned int* address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
+ bool BlockStorageDevice_FindNextUsageBlock(BlockStorageDevice* device, unsigned int blockUsage, unsigned int* address, unsigned int* blockRegionIndex, unsigned int* blockRangeIndex);
 
 #ifdef __cplusplus
 }
 #endif
 
-struct BLOCKSTORAGEDEVICE
-{
-    // from templace class HAL_DblLinkedNode<BlockStorageDevice>
-    BlockStorageDevice* m_nextNode;
-    BlockStorageDevice* m_prevNode;
-
-    IBlockStorageDevice* m_BSD;
-    void*                m_context;
-};
 
 /////////////////////////////////////////////////////
 // BlockStorageStream declarations
@@ -468,21 +466,21 @@ typedef enum StorageUsage
 extern "C" {
 #endif
 
-__nfweak bool BlockStorageStream_IsXIP(BlockStorageStream* stream);
-__nfweak bool BlockStorageStream_IsReadModifyWrite(BlockStorageStream* stream);
-__nfweak bool BlockStorageStream_SetReadModifyWrite(BlockStorageStream* stream);
+ bool BlockStorageStream_IsXIP(BlockStorageStream* stream);
+ bool BlockStorageStream_IsReadModifyWrite(BlockStorageStream* stream);
+ bool BlockStorageStream_SetReadModifyWrite(BlockStorageStream* stream);
 
-__nfweak bool BlockStorageStream_Initialize(BlockStorageStream* stream, unsigned int blockUsage);
-__nfweak bool BlockStorageStream_InitializeWithBlockStorageDevice(BlockStorageStream* stream, unsigned int blockUsage, BlockStorageDevice* pDevice);
-__nfweak bool BlockStorageStream_NextStream(BlockStorageStream* stream);
-__nfweak bool BlockStorageStream_PrevStream(BlockStorageStream* stream);
-__nfweak bool BlockStorageStream_Seek(BlockStorageStream* stream, unsigned int offset, SeekOrigin origin);
-__nfweak bool BlockStorageStream_Write(BlockStorageStream* stream, unsigned char* data, unsigned int length);
-__nfweak bool BlockStorageStream_Erase(BlockStorageStream* stream, unsigned int length);
-__nfweak bool BlockStorageStream_ReadIntoBuffer(BlockStorageStream* stream, unsigned char* buffer, unsigned int length);
-__nfweak bool BlockStorageStream_Read(BlockStorageStream* stream, unsigned char** buffer, unsigned int length);
-__nfweak unsigned int BlockStorageStream_CurrentAddress(BlockStorageStream* stream);
-__nfweak bool BlockStorageStream_IsErased(BlockStorageStream* stream, unsigned int length);
+ bool BlockStorageStream_Initialize(BlockStorageStream* stream, unsigned int blockUsage);
+ bool BlockStorageStream_InitializeWithBlockStorageDevice(BlockStorageStream* stream, unsigned int blockUsage, BlockStorageDevice* pDevice);
+ bool BlockStorageStream_NextStream(BlockStorageStream* stream);
+ bool BlockStorageStream_PrevStream(BlockStorageStream* stream);
+ bool BlockStorageStream_Seek(BlockStorageStream* stream, unsigned int offset, SeekOrigin origin);
+ bool BlockStorageStream_Write(BlockStorageStream* stream, unsigned char* data, unsigned int length);
+ bool BlockStorageStream_Erase(BlockStorageStream* stream, unsigned int length);
+ bool BlockStorageStream_ReadIntoBuffer(BlockStorageStream* stream, unsigned char* buffer, unsigned int length);
+ bool BlockStorageStream_Read(BlockStorageStream* stream, unsigned char** buffer, unsigned int length);
+ unsigned int BlockStorageStream_CurrentAddress(BlockStorageStream* stream);
+ bool BlockStorageStream_IsErased(BlockStorageStream* stream, unsigned int length);
 
 #ifdef __cplusplus
 }
@@ -519,23 +517,23 @@ extern "C" {
 #endif
 
 // initialize the storage
-//__nfweak void BlockStorageList_Initialize();
+// void BlockStorageList_Initialize();
 // walk through list of devices and calls Init() function
-//__nfweak bool BlockStorageList_InitializeDevices();
+// bool BlockStorageList_InitializeDevices();
 // walk through list of devices and calls UnInit() function
-//__nfweak bool BlockStorageList_UnInitializeDevices();
+// bool BlockStorageList_UnInitializeDevices();
 // add pBSD to the list
 // If Init=true, the Init() will be called.
-__nfweak bool BlockStorageList_AddDevice(BlockStorageDevice* pBSD, IBlockStorageDevice* vtable, void* config, bool init);
+ bool BlockStorageList_AddDevice(BlockStorageDevice* pBSD, IBlockStorageDevice* vtable, void* config, bool init);
 // remove pBSD from the list
 // Uninit = true, UnInit() will be called.
-//__nfweak bool BlockStorageList_RemoveDevice(BlockStorageDevice* pBSD, bool unInit);
+// bool BlockStorageList_RemoveDevice(BlockStorageDevice* pBSD, bool unInit);
 // Find the right Device with the corresponding phyiscal address.
-__nfweak bool BlockStorageList_FindDeviceForPhysicalAddress(BlockStorageDevice** pBSD, unsigned int physicalAddress, ByteAddress* blockAddress);
-__nfweak BlockStorageDevice* BlockStorageList_GetFirstDevice();
-//__nfweak BlockStorageDevice* BlockStorageList_GetNextDevice(BlockStorageDevice* device);
+ bool BlockStorageList_FindDeviceForPhysicalAddress(BlockStorageDevice** pBSD, unsigned int physicalAddress, ByteAddress* blockAddress);
+ BlockStorageDevice* BlockStorageList_GetFirstDevice();
+// BlockStorageDevice* BlockStorageList_GetNextDevice(BlockStorageDevice* device);
 // returns number of devices has been declared in the system
-//__nfweak unsigned int BlockStorageList_GetNumDevices();
+// unsigned int BlockStorageList_GetNumDevices();
 
 #ifdef __cplusplus
 }
@@ -598,9 +596,16 @@ typedef struct MEMORY_MAPPED_NOR_BLOCK_CONFIG
 
 }MEMORY_MAPPED_NOR_BLOCK_CONFIG;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //////////////////////////////////////////////////////////
 // function to included in all target devices to be added
 void BlockStorage_AddDevices();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _NANOPAL_BLOCKSTORAGE_H_

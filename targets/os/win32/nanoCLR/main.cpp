@@ -20,7 +20,6 @@
 #pragma comment(lib, "Debugger.lib")
 #pragma comment(lib, "Diagnostics.lib")
 #pragma comment(lib, "Hardware.lib")
-#pragma comment(lib, "HeapPersistence.lib")
 #pragma comment(lib, "InterruptHandler.lib")
 #pragma comment(lib, "Messaging.lib")
 #pragma comment(lib, "RPC.lib")
@@ -33,7 +32,6 @@
 #pragma comment(lib, "Debugger_stub.lib")
 #pragma comment(lib, "Diagnostics_stub.lib")
 #pragma comment(lib, "Hardware_stub.lib")
-#pragma comment(lib, "HeapPersistence_stub.lib")
 #pragma comment(lib, "InterruptHandler_stub.lib")
 #pragma comment(lib, "IOPort_stub.lib")
 #pragma comment(lib, "Messaging_stub.lib")
@@ -53,9 +51,9 @@
 
 
 // All solutions are expected to provide an implementation of this
-unsigned int Solution_GetReleaseInfo(MfReleaseInfo& releaseInfo)
+bool Target_GetReleaseInfo(NFReleaseInfo& releaseInfo)
 {
-    MfReleaseInfo::Init(releaseInfo,
+    NFReleaseInfo::Init(releaseInfo,
                         VERSION_MAJOR, VERSION_MINOR, VERSION_BUILD, VERSION_REVISION,
                         OEMSYSTEMINFOSTRING, hal_strlen_s(OEMSYSTEMINFOSTRING)
                         );
@@ -68,6 +66,9 @@ unsigned int Solution_GetReleaseInfo(MfReleaseInfo& releaseInfo)
 int main()
 {
     //void ApplicationEntryPoint()
+
+	// initialize nanoHAL
+	nanoHAL_Initialize();
 
     CLR_SETTINGS clrSettings;
     ZeroMemory(&clrSettings, sizeof(clrSettings));

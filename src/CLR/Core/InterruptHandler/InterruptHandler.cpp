@@ -13,6 +13,7 @@
 HRESULT CLR_HW_Hardware::ManagedHardware_Initialize()
 {
     NATIVE_PROFILE_CLR_HARDWARE();
+
     NANOCLR_HEADER();
     
     m_interruptData.m_HalQueue.Initialize( (CLR_HW_Hardware::HalInterruptRecord*)&g_scratchInterruptDispatchingStorage, InterruptRecords() );
@@ -22,48 +23,48 @@ HRESULT CLR_HW_Hardware::ManagedHardware_Initialize()
     m_interruptData.m_queuedInterrupts = 0;
 
     NANOCLR_NOCLEANUP_NOLABEL();
-
 }
 
 HRESULT CLR_HW_Hardware::SpawnDispatcher()
 {
     NATIVE_PROFILE_CLR_HARDWARE();
+
     NANOCLR_HEADER();
 
-    // UNDONE: FIXME: CLR_RT_ApplicationInterrupt* interrupt;
-    //CLR_RT_HeapBlock_NativeEventDispatcher* ioPort;
-    //CLR_RT_HeapBlock_NativeEventDispatcher ::InterruptPortInterrupt *interruptData;
+    CLR_RT_ApplicationInterrupt* interrupt;
+    CLR_RT_HeapBlock_NativeEventDispatcher* ioPort;
+    CLR_RT_HeapBlock_NativeEventDispatcher ::InterruptPortInterrupt *interruptData;
 
-    //// if reboot is in progress, just bail out
-    //if(CLR_EE_DBG_IS( RebootPending )) 
-    //{
-    //    return S_OK;
-    //}
+    // if reboot is in progress, just bail out
+    if(CLR_EE_DBG_IS( RebootPending )) 
+    {
+       return S_OK;
+    }
 
-    //interrupt = (CLR_RT_ApplicationInterrupt*)m_interruptData.m_applicationQueue.FirstValidNode();
+    interrupt = (CLR_RT_ApplicationInterrupt*)m_interruptData.m_applicationQueue.FirstValidNode();
 
-    //if((interrupt == NULL) || !g_CLR_RT_ExecutionEngine.EnsureSystemThread( g_CLR_RT_ExecutionEngine.m_interruptThread, ThreadPriority::System_Highest ))
-    //{
-    //    return S_OK;
-    //}
+    if((interrupt == NULL) || !g_CLR_RT_ExecutionEngine.EnsureSystemThread( g_CLR_RT_ExecutionEngine.m_interruptThread, ThreadPriority::System_Highest ))
+    {
+       return S_OK;
+    }
 
-    //interrupt->Unlink();
+    interrupt->Unlink();
 
-    //interruptData = &interrupt->m_interruptPortInterrupt;
-    //ioPort = interruptData->m_context;
+    interruptData = &interrupt->m_interruptPortInterrupt;
+    ioPort = interruptData->context;
 
-    //CLR_RT_ProtectFromGC gc1 ( *ioPort );
-    //
-    //NANOCLR_SET_AND_LEAVE(ioPort->StartDispatch( interrupt, g_CLR_RT_ExecutionEngine.m_interruptThread ));
-    //
-    //NANOCLR_CLEANUP();
+    CLR_RT_ProtectFromGC gc1 ( *ioPort );
+    
+    NANOCLR_SET_AND_LEAVE(ioPort->StartDispatch( interrupt, g_CLR_RT_ExecutionEngine.m_interruptThread ));
+    
+    NANOCLR_CLEANUP();
 
-    //if(FAILED(hr))
-    //{
-    //    ioPort->ThreadTerminationCallback( interrupt );
-    //}
+    if(FAILED(hr))
+    {
+       ioPort->ThreadTerminationCallback( interrupt );
+    }
 
-    //--m_interruptData.m_queuedInterrupts;
+    --m_interruptData.m_queuedInterrupts;
 
     NANOCLR_CLEANUP_END();
 }
@@ -71,6 +72,7 @@ HRESULT CLR_HW_Hardware::SpawnDispatcher()
 HRESULT CLR_HW_Hardware::TransferAllInterruptsToApplicationQueue()
 {
     NATIVE_PROFILE_CLR_HARDWARE();
+
     NANOCLR_HEADER();
 
     while(true)
@@ -81,24 +83,28 @@ HRESULT CLR_HW_Hardware::TransferAllInterruptsToApplicationQueue()
             GLOBAL_LOCK(irq1);
 
             rec = m_interruptData.m_HalQueue.Peek();
+
+            GLOBAL_UNLOCK();
         }
 
         if(rec == NULL) break;
 
         CLR_RT_ApplicationInterrupt* queueRec = (CLR_RT_ApplicationInterrupt*)CLR_RT_Memory::Allocate_And_Erase( sizeof(CLR_RT_ApplicationInterrupt), CLR_RT_HeapBlock::HB_CompactOnFailure );  CHECK_ALLOCATION(queueRec);
 
-        queueRec->m_interruptPortInterrupt.m_data1   =                                          rec->m_data1;
-        queueRec->m_interruptPortInterrupt.m_data2   =                                          rec->m_data2;
-        queueRec->m_interruptPortInterrupt.m_data3   =                                          rec->m_data3;
-        queueRec->m_interruptPortInterrupt.m_time    =                                          rec->m_time;
-        queueRec->m_interruptPortInterrupt.m_context = (CLR_RT_HeapBlock_NativeEventDispatcher*)rec->m_context;
+        queueRec->m_interruptPortInterrupt.data1   =                                          rec->m_data1;
+        queueRec->m_interruptPortInterrupt.data2   =                                          rec->m_data2;
+        queueRec->m_interruptPortInterrupt.data3   =                                          rec->m_data3;
+        queueRec->m_interruptPortInterrupt.time    =                                          rec->m_time;
+        queueRec->m_interruptPortInterrupt.context = (CLR_RT_HeapBlock_NativeEventDispatcher*)rec->m_context;
 
         m_interruptData.m_applicationQueue.LinkAtBack( queueRec ); ++m_interruptData.m_queuedInterrupts;
 
         {
             GLOBAL_LOCK(irq2);
-            
+
             m_interruptData.m_HalQueue.Pop();
+
+            GLOBAL_UNLOCK();
         }
     }
 
@@ -119,6 +125,8 @@ HRESULT CLR_HW_Hardware::TransferAllInterruptsToApplicationQueue()
             {
                 m_interruptData.m_HalQueue.Pop();
             }
+
+            GLOBAL_UNLOCK();
         }
     }    
     
@@ -128,6 +136,7 @@ HRESULT CLR_HW_Hardware::TransferAllInterruptsToApplicationQueue()
 HRESULT CLR_HW_Hardware::ProcessInterrupts()
 {
     NATIVE_PROFILE_CLR_HARDWARE();
+
     NANOCLR_HEADER();
 
     NANOCLR_CHECK_HRESULT(TransferAllInterruptsToApplicationQueue());
@@ -136,4 +145,3 @@ HRESULT CLR_HW_Hardware::ProcessInterrupts()
 
     NANOCLR_NOCLEANUP();
 }
-

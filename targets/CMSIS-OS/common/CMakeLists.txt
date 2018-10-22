@@ -4,6 +4,13 @@
 #
 
 # append target CMSIS-OS common source files 
-# list(APPEND TARGET_CMSIS_COMMON_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/WireProtocol_ReceiverThread.c")
+
+# if SWO opting add source file
+if(SWO_OUTPUT_OPTION)
+    list(APPEND TARGET_CMSIS_COMMON_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/swo.cpp")
+endif()
+
+list(APPEND TARGET_CMSIS_COMMON_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/syscalls.c")
+
 # make var global
 set(TARGET_CMSIS_COMMON_SOURCES ${TARGET_CMSIS_COMMON_SOURCES} CACHE INTERNAL "make global")

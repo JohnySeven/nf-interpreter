@@ -406,15 +406,12 @@ enum CLR_DataType // KEEP IN SYNC WITH Microsoft.SPOT.DataType!!
 
     DATATYPE_VTU_PORT_LAST              = DATATYPE_IO_PORT_LAST + 1,
 
-    DATATYPE_I2C_XACTION                ,
-    DATATYPE_I2C_XACTION_LAST           = DATATYPE_VTU_PORT_LAST + 1,
-
 #if defined(NANOCLR_APPDOMAINS)
     DATATYPE_APPDOMAIN_HEAD             ,
     DATATYPE_TRANSPARENT_PROXY          ,
     DATATYPE_APPDOMAIN_ASSEMBLY         ,
 #endif
-    DATATYPE_APPDOMAIN_LAST             = DATATYPE_I2C_XACTION_LAST + 3,
+    DATATYPE_APPDOMAIN_LAST             = DATATYPE_VTU_PORT_LAST + 3,
 
     DATATYPE_FIRST_INVALID              ,
 
@@ -476,7 +473,7 @@ inline CLR_UINT32 CLR_UncompressMethodToken( CLR_UINT32 tk )
 
 #if defined(_WIN32)
 
-__nfweak CLR_UINT32 CLR_ReadTokenCompressed( CLR_PMETADATA& ip, CLR_OPCODE opcode );
+ CLR_UINT32 CLR_ReadTokenCompressed( CLR_PMETADATA& ip, CLR_OPCODE opcode );
 
 #endif
 
@@ -773,15 +770,15 @@ inline CLR_OPCODE CLR_ReadNextOpcodeCompressed( CLR_PMETADATA& ip )
 
 #if defined(_WIN32)
 
-__nfweak CLR_PMETADATA CLR_SkipBodyOfOpcode          ( CLR_PMETADATA ip, CLR_OPCODE opcode );
-__nfweak CLR_PMETADATA CLR_SkipBodyOfOpcodeCompressed( CLR_PMETADATA ip, CLR_OPCODE opcode );
+ CLR_PMETADATA CLR_SkipBodyOfOpcode          ( CLR_PMETADATA ip, CLR_OPCODE opcode );
+ CLR_PMETADATA CLR_SkipBodyOfOpcodeCompressed( CLR_PMETADATA ip, CLR_OPCODE opcode );
 
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-__nfweak extern bool CLR_SafeSprintfV( char*& szBuffer, size_t& iBuffer, const char* format, va_list arg );
-__nfweak extern bool CLR_SafeSprintf ( char*& szBuffer, size_t& iBuffer, const char* format, ...         );
+ extern bool CLR_SafeSprintfV( char*& szBuffer, size_t& iBuffer, const char* format, va_list arg );
+ extern bool CLR_SafeSprintf ( char*& szBuffer, size_t& iBuffer, const char* format, ...         );
 
 #if !defined(BUILD_RTM)
 
@@ -797,17 +794,17 @@ __nfweak extern bool CLR_SafeSprintf ( char*& szBuffer, size_t& iBuffer, const c
 
 struct CLR_Debug
 {
-    __nfweak static int  PrintfV( const char *format, va_list arg );
-    __nfweak static int  Printf ( const char *format, ...         );
-    __nfweak static void Emit   ( const char *text, int len       );
-    __nfweak static void Flush  (                                 );
+     static int  PrintfV( const char *format, va_list arg );
+     static int  Printf ( const char *format, ...         );
+     static void Emit   ( const char *text, int len       );
+     static void Flush  (                                 );
 
     //--//
 
     typedef int (*OutputHandler)( const char *format, ... );
 
 #if defined(_WIN32)
-    __nfweak static void RedirectToString( std::string* str );
+     static void RedirectToString( std::string* str );
 #endif
 };
 
@@ -825,7 +822,6 @@ struct CLR_RECORD_ASSEMBLY
 {
     static const CLR_UINT32 c_Flags_NeedReboot = 0x00000001;
     static const CLR_UINT32 c_Flags_Patch      = 0x00000002;
-    static const CLR_UINT32 c_Flags_BigEndian  = 0x80000080;
 
     CLR_UINT8          marker[ 8 ];
     //
@@ -1056,6 +1052,12 @@ struct CLR_RECORD_METHODDEF
     CLR_SIG    sig;             // TBL_Signatures
 };
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
+// pragma required here because compiler is not too happy with the cast to CLR_UINT32* from a CLR_UINT16 variable
+
 struct CLR_RECORD_ATTRIBUTE
 {
     CLR_UINT16 ownerType;       // one of TBL_TypeDef, TBL_MethodDef, or TBL_FieldDef.
@@ -1065,6 +1067,10 @@ struct CLR_RECORD_ATTRIBUTE
 
     CLR_UINT32 Key() const { return *(CLR_UINT32*)&ownerType; }
 };
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 struct CLR_RECORD_TYPESPEC
 {

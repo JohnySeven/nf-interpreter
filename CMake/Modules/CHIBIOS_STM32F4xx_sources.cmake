@@ -13,58 +13,58 @@
 set(CHIBIOS_PORT_SRCS
     # startup code
     crt1.c
-    vectors.c
-    crt0_v7m.s
+    vectors.S
+    crt0_v7m.S
 
     nvic.c
+    stm32_isr.c
     hal_lld.c
-    ext_lld_isr.c
 
-    adc_lld.c
-    can_lld.c
-    ext_lld.c
-    dac_lld.c
+    hal_adc_lld.c
+    #hal_can_lld.c
+    #hal_dac_lld.c
     stm32_dma.c
-    pal_lld.c
-    i2c_lld.c
-    mac_lld.c
-    usb_lld.c
-    rtc_lld.c
-    sdc_lld.c
-    i2s_lld.c
-    spi_lld.c
-    gpt_lld.c
-    icu_lld.c
-    pwm_lld.c
-    st_lld.c
-    serial_lld.c
-    uart_lld.c
-    usb_lld.c
-    wdg_lld.c
+    hal_ext_lld.c
+    hal_pal_lld.c
+    hal_i2c_lld.c
+    hal_mac_lld.c
+    hal_rtc_lld.c
+    #hal_sdc_lld.c
+    #hal_i2s_lld.c
+    hal_spi_lld.c
+    hal_st_lld.c
+    hal_gpt_lld.c
+    hal_icu_lld.c
+    hal_pwm_lld.c
+    hal_serial_lld.c
+    hal_uart_lld.c
+    hal_usb_lld.c
+    hal_wdg_lld.c
 
     # RT
     chcore.c
     chcore_v7m.c
-    chcoreasm_v7m.s
+    chcoreasm_v7m.S
 )
 
 foreach(SRC_FILE ${CHIBIOS_PORT_SRCS})
-    set(CHIBIOS_SRC_FILE SRC_FILE-NOTFOUND)
-    find_file(CHIBIOS_SRC_FILE ${SRC_FILE}
+    set(CHIBIOS_F4_SRC_FILE SRC_FILE-NOTFOUND)
+    find_file(CHIBIOS_F4_SRC_FILE ${SRC_FILE}
         PATHS 
+
+            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ports/ARMCMx/compilers/GCC
+            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/startup/ARMCMx/compilers/GCC
+            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ports/ARMCMx
+            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/common/ARMCMx
 
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/STM32F4xx
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/ADCv2
-            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/CANv1
-            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/EXTIv1
-            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/DACv1
+            #${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/CANv1
+            #${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/DACv1
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/DMAv2
+            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/EXTIv1
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/GPIOv2
-            if(${CHIBIOS_BOARD} STREQUAL "ST_STM32F429I_DISCOVERY" OR ${CHIBIOS_BOARD} STREQUAL "MBN_QUAIL")
-                ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/I2Cv1
-            else()
-                ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/I2Cv2
-            endif()
+            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/I2Cv1
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/MACv1
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/OTGv1
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/RTCv2
@@ -75,41 +75,29 @@ foreach(SRC_FILE ${CHIBIOS_PORT_SRCS})
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/USBv1
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/xWDGv1
 
-            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/rt/ports/ARMCMx
-            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/rt/ports/ARMCMx/compilers/GCC
-            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ports/ARMCMx/compilers/GCC
-
-            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ports/ARMCMx
-            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/startup/ARMCMx/compilers/GCC
-            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/common/ARMCMx
-
         CMAKE_FIND_ROOT_PATH_BOTH
     )
-    # message("${SRC_FILE} >> ${CHIBIOS_SRC_FILE}") # debug helper
-    list(APPEND CHIBIOS_SOURCES ${CHIBIOS_SRC_FILE})
+    # message("${SRC_FILE} >> ${CHIBIOS_F4_SRC_FILE}") # debug helper
+    list(APPEND CHIBIOS_SOURCES ${CHIBIOS_F4_SRC_FILE})
 endforeach()
 
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/portability/GCC)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/startup/ARMCMx/compilers/GCC)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/startup/ARMCMx/devices/STM32F4xx)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ports/ARMCMx/devices/STM32F4xx)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ext/CMSIS/ST/STM32F4xx)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ext/CMSIS/include)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/STM32F4xx)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ext/ARM/CMSIS/Core/Include)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ext/ST/STM32F4xx)
 
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/ADCv2)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/CANv1)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/EXTIv1)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/DACv1)
+#list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/CANv1)
+#list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/DACv1)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/DMAv2)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/EXTIv1)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/GPIOv2)
-if(${CHIBIOS_BOARD} STREQUAL "ST_STM32F429I_DISCOVERY" OR ${CHIBIOS_BOARD} STREQUAL "MBN_QUAIL")
-    list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/I2Cv1)
-else()
-    list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/I2Cv2)
-endif()
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/I2Cv1)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/MACv1)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/OTGv1)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/RTCv2)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/SDIOv1)
+#list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/SDMMCv1)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/SPIv1)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/TIMv1)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/LLD/USARTv1)
@@ -122,6 +110,12 @@ list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/por
 ####################################################################################
 # component STM32_FLASH
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/FLASHv2)
+# component STM32_CRC
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/CRCv1)
+# component STM32_RNG
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/RNGv1) 
+# component STM32_FSMC (Flexible Memory Controller)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/FSMCv1)
 
 ###############################################################################################################################
 # Add above the required include directory(ies) for a new nanoFramework overlay component that you are adding
@@ -136,6 +130,14 @@ list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/
 ####################################################################################################
 # component STM32_FLASH
 list(APPEND ChibiOSnfOverlay_SOURCES ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/FLASHv2/flash_lld.c)
+# component STM32_CRC
+list(APPEND ChibiOSnfOverlay_SOURCES ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/CRCv1/crc_lld.c)
+# component STM32_RNG
+list(APPEND ChibiOSnfOverlay_SOURCES ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/RNGv1/rng_lld.c)
+# component STM32_FSMC (Flexible Memory Controller)
+list(APPEND ChibiOSnfOverlay_SOURCES ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/FSMCv1/fsmc_nand_lld.c)
+list(APPEND ChibiOSnfOverlay_SOURCES ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/FSMCv1/fsmc_sdram_lld.c)
+list(APPEND ChibiOSnfOverlay_SOURCES ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/ports/STM32/LLD/FSMCv1/fsmc_sram_lld.c)
 
 ##########################################################################################################################
 # Add above ALL the source code file(s) low level driver specif for a series required for a new nanoFramework 
@@ -143,18 +145,3 @@ list(APPEND ChibiOSnfOverlay_SOURCES ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/Chib
 #
 # list(APPEND CHIBIOS_SOURCES ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/src/<path-here>)
 ##########################################################################################################################
-
-
-#######################################################################################################################################
-# this function sets the linker options AND a specific linker file (full path and name, including extension)
-function(CHIBIOS_SET_LINKER_OPTIONS_AND_FILE TARGET LINKER_FILE_NAME)
-
-    get_target_property(TARGET_LD_FLAGS ${TARGET} LINK_FLAGS)
-    if(TARGET_LD_FLAGS)
-        set(TARGET_LD_FLAGS "-T${LINKER_FILE_NAME} ${TARGET_LD_FLAGS}")
-    else()
-        set(TARGET_LD_FLAGS "-T${LINKER_FILE_NAME}")
-    endif()
-    set_target_properties(${TARGET} PROPERTIES LINK_FLAGS ${TARGET_LD_FLAGS})
-
-endfunction()

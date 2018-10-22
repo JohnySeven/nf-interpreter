@@ -8,6 +8,11 @@
 
 #include <nanoCLR_Runtime.h>
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 struct CLR_RT_DUMP
 {
 #undef DECL_POSTFIX
@@ -17,11 +22,11 @@ struct CLR_RT_DUMP
 #define DECL_POSTFIX {}
 #endif
 
-    __nfweak static void TYPE  ( const CLR_RT_TypeDef_Index&       cls                 ) DECL_POSTFIX;
-    __nfweak static void TYPE  ( const CLR_RT_ReflectionDef_Index& reflex              ) DECL_POSTFIX;
-    __nfweak static void METHOD( const CLR_RT_MethodDef_Index&     method              ) DECL_POSTFIX;
-    __nfweak static void FIELD ( const CLR_RT_FieldDef_Index&      field               ) DECL_POSTFIX;
-    __nfweak static void OBJECT(       CLR_RT_HeapBlock*           ptr   , const char* text ) DECL_POSTFIX;
+     static void TYPE  ( const CLR_RT_TypeDef_Index&       cls                 ) DECL_POSTFIX;
+     static void TYPE  ( const CLR_RT_ReflectionDef_Index& reflex              ) DECL_POSTFIX;
+     static void METHOD( const CLR_RT_MethodDef_Index&     method              ) DECL_POSTFIX;
+     static void FIELD ( const CLR_RT_FieldDef_Index&      field               ) DECL_POSTFIX;
+     static void OBJECT(       CLR_RT_HeapBlock*           ptr   , const char* text ) DECL_POSTFIX;
 
     //--//
 
@@ -31,10 +36,10 @@ struct CLR_RT_DUMP
 #else
 #define DECL_POSTFIX {}
 #endif
-    __nfweak static void EXCEPTION             ( CLR_RT_StackFrame& stack, CLR_RT_HeapBlock& ref ) DECL_POSTFIX;
-    __nfweak static void POST_PROCESS_EXCEPTION( CLR_RT_HeapBlock& ref                           ) DECL_POSTFIX;
+     static void EXCEPTION             ( CLR_RT_StackFrame& stack, CLR_RT_HeapBlock& ref ) DECL_POSTFIX;
+     static void POST_PROCESS_EXCEPTION( CLR_RT_HeapBlock& ref                           ) DECL_POSTFIX;
 
-    __nfweak static const char* GETERRORMESSAGE( HRESULT hrError );
+     static const char* GETERRORMESSAGE( HRESULT hrError );
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -51,7 +56,10 @@ struct CLR_Checks
     static HRESULT VerifyUnsupportedInstruction( CLR_OPCODE op         );
 };
 
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif // _NANOCLR_CHECKS_H_
-

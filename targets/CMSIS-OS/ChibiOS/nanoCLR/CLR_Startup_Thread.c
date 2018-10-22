@@ -4,34 +4,36 @@
 //
 
 #include <ch.h>
+#include <hal.h>
 #include <cmsis_os.h>
 
 #include <nanoCLR_Application.h>
-#include <nanoPAL_BlockStorage.h>
+#include <nanoHAL_v2.h>
+#include <string.h>
+
 
 // This thread needs to be implemented at ChibiOS level because it has to include a call to chThdShouldTerminateX()
 // in case the thread is requested to terminate by the CMSIS call osThreadTerminate()
 
+__attribute__((noreturn))
 void CLRStartupThread(void const * argument)
 {
-  (void)argument;
+  CLR_SETTINGS* clrSettings = (CLR_SETTINGS*)argument;
 
-  BlockStorage_AddDevices();
+  #if (HAL_USE_STM32_CRC == TRUE)
+  // startup crc
+  crcStart(NULL);
+  #endif
 
-  CLR_SETTINGS clrSettings;
+  // initialize nanoHAL
+  nanoHAL_Initialize_C();
 
-  memset(&clrSettings, 0, sizeof(CLR_SETTINGS));
-
-  clrSettings.MaxContextSwitches         = 50;
-  clrSettings.WaitForDebugger            = false;
-  clrSettings.EnterDebuggerLoopAfterExit = true;
-
-  ClrStartup(clrSettings);
+  ClrStartup(*clrSettings);
 
   // loop until thread receives a request to terminate
-  while (!chThdShouldTerminateX()) {
+  while (1) {
     osDelay(500);
   }
 
-  // nothing to deinitialize or cleanup, so it's safe to return
+  // this function never returns
 }

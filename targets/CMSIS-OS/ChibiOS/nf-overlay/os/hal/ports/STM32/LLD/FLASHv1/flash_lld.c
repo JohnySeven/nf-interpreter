@@ -75,7 +75,7 @@ void flash_lld_readBytes(uint32_t startAddress, uint32_t length, uint8_t* buffer
     }
 }
 
-bool flash_lld_write(uint32_t startAddress, uint32_t length, const uint8_t* buffer) {
+int flash_lld_write(uint32_t startAddress, uint32_t length, const uint8_t* buffer) {
 
     __IO uint8_t* cursor = (__IO uint8_t*)startAddress;
     __IO uint8_t* endAddress = (__IO uint8_t*)(startAddress + length);
@@ -92,16 +92,19 @@ bool flash_lld_write(uint32_t startAddress, uint32_t length, const uint8_t* buff
             // NOTE: assuming that the supply voltage is able to cope with half-word programming
             if((endAddress - cursor) >= 2)
             {
-                *((__IO uint16_t*)cursor++) = *((uint16_t*)buffer++);
+                *(__IO uint16_t*)cursor = *((uint16_t*)buffer);
 
                 // update flash and buffer pointers by the 'extra' byte that was programmed
-                cursor++;
-                buffer++;
+                cursor += 2;
+                buffer += 2;
             }
             else
             {
-                // program single byte 
-                *cursor = *buffer++;
+                // program single byte
+                *(__IO uint8_t*)cursor = *buffer;
+
+                // update flash pointer by the 'extra' byte that was programmed
+                cursor += 2;
             }
             
             // wait for program operation to be completed 
@@ -113,18 +116,17 @@ bool flash_lld_write(uint32_t startAddress, uint32_t length, const uint8_t* buff
         CLEAR_BIT(FLASH->CR, FLASH_CR_PG);
         
         // lock the FLASH
-        if(HAL_FLASH_Lock())
-        {
-            // lock succesfull, done here
-            return true;
-        }
+        HAL_FLASH_Lock();
+        
+        // done here
+        return true;
     }
 
     // default to false
     return false;
 }
 
-bool flash_lld_isErased(uint32_t startAddress, uint32_t length) {
+int flash_lld_isErased(uint32_t startAddress, uint32_t length) {
 
     __IO uint32_t* cursor = (__IO uint32_t*)startAddress;
     __IO uint32_t* endAddress = (__IO uint32_t*)(startAddress + length);
@@ -149,7 +151,7 @@ uint8_t flash_lld_getSector(uint32_t address)
   return (address - FLASH_BASE) / F0_SERIES_SECTOR_SIZE;
 }
 
-bool flash_lld_erase(uint32_t address) {
+int flash_lld_erase(uint32_t address) {
 
     // unlock the FLASH
     if(HAL_FLASH_Unlock())
@@ -167,11 +169,10 @@ bool flash_lld_erase(uint32_t address) {
         CLEAR_BIT(FLASH->CR, FLASH_CR_PER);
 
         // lock the FLASH
-        if(HAL_FLASH_Lock())
-        {
-            // lock succesfull, done here
-            return true;
-        }
+        HAL_FLASH_Lock();
+
+        // done here
+        return true;
     }
 
     // default to false

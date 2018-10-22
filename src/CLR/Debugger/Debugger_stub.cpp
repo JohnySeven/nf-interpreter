@@ -13,11 +13,6 @@ __nfweak void CLR_DBG_Debugger::Debugger_WaitForCommands()
     NATIVE_PROFILE_CLR_DEBUGGER();
 }
 
-__nfweak void CLR_DBG_Debugger::Debugger_Discovery()
-{
-    NATIVE_PROFILE_CLR_DEBUGGER();
-}
-
 __nfweak void CLR_DBG_Debugger::PurgeCache()
 {
     NATIVE_PROFILE_CLR_DEBUGGER();
@@ -40,16 +35,21 @@ __nfweak HRESULT CLR_DBG_Debugger::DeleteInstance()
 
 __nfweak void CLR_DBG_Debugger::BroadcastEvent( unsigned int cmd, unsigned int payloadSize, unsigned char* payload, unsigned int flags )
 {
+    (void)cmd;
+    (void)payloadSize;
+    (void)payload;
+    (void)flags;
+
     NATIVE_PROFILE_CLR_DEBUGGER();
 }
 
-__nfweak void MfReleaseInfo::Init( MfReleaseInfo& mfReleaseInfo, unsigned short int major, unsigned short int minor, unsigned short int build, unsigned short int revision, const char *info, size_t infoLen )
+__nfweak void NFReleaseInfo::Init( NFReleaseInfo& NFReleaseInfo, unsigned short int major, unsigned short int minor, unsigned short int build, unsigned short int revision, const char *info, size_t infoLen )
 {
-    MFVersion::Init( mfReleaseInfo.version, major, minor, build, revision );
-    mfReleaseInfo.infoString[ 0 ] = 0;
+    NFVersion::Init( NFReleaseInfo.Version, major, minor, build, revision );
+    NFReleaseInfo.InfoString[ 0 ] = 0;
     if ( NULL != info && infoLen > 0 )
     {
-        const size_t len = MIN(infoLen, sizeof(mfReleaseInfo.infoString)-1);
-        hal_strncpy_s( (char*)&mfReleaseInfo.infoString[0], sizeof(mfReleaseInfo.infoString), info, len );
+        const size_t len = MIN(infoLen, sizeof(NFReleaseInfo.InfoString)-1);
+        hal_strncpy_s( (char*)&NFReleaseInfo.InfoString[0], sizeof(NFReleaseInfo.InfoString), info, len );
     }
 }

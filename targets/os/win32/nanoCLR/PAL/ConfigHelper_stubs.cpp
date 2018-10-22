@@ -69,16 +69,8 @@
 //    return FALSE;
 //}
 //
-//bool HAL_CONFIG_BLOCK::ApplyConfig( const char* Name, void* Address, size_t Length )
-//{
-//    return FALSE;
-//}
-//bool HAL_CONFIG_BLOCK::ApplyConfig( const char* Name, void* Address, size_t Length, void** newAlloc )
-//{
-//    return FALSE;
-//}
 
-unsigned int /* ie, bool */ GetHalSystemInfo(HalSystemInfo& systemInfo)
+bool GetHalSystemInfo(HalSystemInfo& systemInfo)
 {
     return FALSE;
 }

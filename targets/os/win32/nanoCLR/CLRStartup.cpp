@@ -71,8 +71,6 @@ struct Settings
         CLR_Debug::Printf( "Started Hardware.\r\n" );
 #endif
 
-        CLR_DBG_Debugger::Debugger_Discovery();
-
         m_fInitialized = true;
 
 
@@ -129,13 +127,43 @@ struct Settings
         CLR_RT_StringVector vec;
 
         vec.push_back(L"-load");
-        vec.push_back(L"..\\netmf\\MFConsoleApplication\\bin\\Release\\le\\MFConsoleApplication.pe");
+#if defined _DEBUG
+		vec.push_back(L"..\\netnf\\TestApplication\\bin\\Debug\\TestApplication.pe");
+#else
+		vec.push_back(L"..\\netnf\\TestApplication\\bin\\Release\\TestApplication.pe");
+#endif
 
-        vec.push_back(L"-load");
-        vec.push_back(L"C:\\Program Files (x86)\\Microsoft .NET Micro Framework\\v4.4\\Assemblies\\le\\mscorlib.pe");
+		// grab mscorlib.pe from the packages folder (it has to be there because the NF.TestApplication has just build)
+		// ************************************************************************* //
+		// just need to update the path on the package folder as the version changes //
+		// ************************************************************************* //
+		vec.push_back(L"-load");
+		vec.push_back(L"..\\packages\\nanoFramework.CoreLibrary.1.0.0-preview038\\lib\\mscorlib.pe");
+		
+		// grab Windows.Devices.Gpio.pe from the packages folder (it has to be there because the NF.TestApplication has just build)
+		// ************************************************************************* //
+		// just need to update the path on the package folder as the version changes //
+		// ************************************************************************* //
+		vec.push_back(L"-load");
+		vec.push_back(L"..\\packages\\nanoFramework.Windows.Devices.Gpio.1.0.0-preview164\\lib\\Windows.Devices.Gpio.pe");
 
-        vec.push_back(L"-load");
-        vec.push_back(L"C:\\Program Files (x86)\\Microsoft .NET Micro Framework\\v4.4\\Assemblies\\le\\Microsoft.SPOT.Native.pe");
+		// grab nanoFramework.Runtime.Events.pe from the packages folder (it has to be there because the NF.TestApplication has just build)
+		// ************************************************************************* //
+		// just need to update the path on the package folder as the version changes //
+		// ************************************************************************* //
+		vec.push_back(L"-load");
+		vec.push_back(L"..\\packages\\nanoFramework.Runtime.Events.1.0.0-preview165\\lib\\nanoFramework.Runtime.Events.pe");
+
+		// grab Windows.Devices.Spi.pe from the packages folder (it has to be there because the NF.TestApplication has just build)
+		// ************************************************************************* //
+		// just need to update the path on the package folder as the version changes //
+		// ************************************************************************* //
+		vec.push_back(L"-load");
+		vec.push_back(L"..\\packages\\nanoFramework.Windows.Devices.Spi.1.0.0-preview164\\lib\\Windows.Devices.Spi.pe");
+
+
+        //vec.push_back(L"-load");
+        //vec.push_back(L"C:\\Program Files (x86)\\Microsoft .NET Micro Framework\\v4.4\\Assemblies\\le\\Microsoft.SPOT.Native.pe");
 
         //wchar_t* pContext = NULL;
         //wchar_t* pch = wcstok_s(emulatorArgs, L" ", &pContext); // UNDONE: FIXME: wcstok_s(this->m_clrOptions.EmulatorArgs, L" ", &pContext);
@@ -181,8 +209,6 @@ struct Settings
         CLR_Debug::Printf( "Resolving.\r\n" );
 #endif
         NANOCLR_CHECK_HRESULT(g_CLR_RT_TypeSystem.ResolveAll());
-
-        g_CLR_RT_Persistence_Manager.Initialize();
 
         NANOCLR_CHECK_HRESULT(g_CLR_RT_TypeSystem.PrepareForExecution());
 
@@ -319,10 +345,11 @@ struct Settings
             }
                 
             // we have good Assembly 
-
             CLR_RT_Assembly* assm;
 
+#if !defined(BUILD_RTM)            
             CLR_Debug::Printf( "Attaching deployed file.\r\n" );
+#endif
 
             // Creates instance of assembly, sets pointer to native functions, links to g_CLR_RT_TypeSystem 
             if (FAILED(LoadAssembly( header, assm ) ))
@@ -330,7 +357,7 @@ struct Settings
                 if(!isXIP) CLR_RT_Memory::Release( assembliesBuffer );
                 break;
             }
-            assm->m_flags |= CLR_RT_Assembly::c_Deployed;
+            assm->m_flags |= CLR_RT_Assembly::Deployed;
         }
         if(!isXIP) CLR_RT_Memory::Release( headerBuffer );
         
@@ -367,12 +394,13 @@ struct Settings
 
     void Cleanup()
     {
-        g_CLR_RT_Persistence_Manager.Uninitialize();
-
-        CLR_RT_ExecutionEngine::DeleteInstance();
+        if(!CLR_EE_REBOOT_IS(NoShutdown))
+        {
+            // OK to delete execution engine 
+            CLR_RT_ExecutionEngine::DeleteInstance();
+        }
 
 #if defined(_WIN32)
-        memset( &g_CLR_RT_Persistence_Manager, 0, sizeof(g_CLR_RT_Persistence_Manager) );
         memset( &g_CLR_RT_ExecutionEngine, 0, sizeof(g_CLR_RT_ExecutionEngine));
         memset( &g_CLR_RT_WellKnownTypes, 0, sizeof(g_CLR_RT_WellKnownTypes));
 
@@ -661,7 +689,7 @@ void ClrStartup( CLR_SETTINGS params )
         if( CLR_EE_DBG_IS_NOT( RebootPending ))
         {
 #if defined(NANOCLR_ENABLE_SOURCELEVELDEBUGGING)
-            CLR_EE_DBG_SET_MASK(State_ProgramExited, State_Mask);
+            CLR_EE_DBG_SET_MASK(StateProgramExited, StateMask);
             CLR_EE_DBG_EVENT_BROADCAST(CLR_DBG_Commands::c_Monitor_ProgramExit, 0, NULL,WP_Flags_c_NonCritical);
 #endif //#if defined(NANOCLR_ENABLE_SOURCELEVELDEBUGGING)
 
@@ -679,19 +707,14 @@ void ClrStartup( CLR_SETTINGS params )
             {
                 softReboot = true;
 
-                params.WaitForDebugger = CLR_EE_REBOOT_IS(ClrOnlyStopDebugger);
-                
+                params.WaitForDebugger = CLR_EE_REBOOT_IS(WaitForDebugger);
+
                 s_ClrSettings.Cleanup();
 
-                // UNDONE: FIXME: HAL_Uninitialize();
-
-                // UNDONE: FIXME: SmartPtr_IRQ::ForceDisabled();
+                //nanoHAL_Uninitialize();
 
                 //re-init the hal for the reboot (initially it is called in bootentry)
-                // UNDONE: FIXME: HAL_Initialize();
-
-                // make sure interrupts are back on
-                // UNDONE: FIXME: SmartPtr_IRQ::ForceEnabled();
+                //nanoHAL_Initialize();
             }
             else
             {
@@ -700,4 +723,3 @@ void ClrStartup( CLR_SETTINGS params )
         }
     } while( softReboot );
 }
-

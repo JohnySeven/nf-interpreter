@@ -32,7 +32,7 @@ bool HAL_Windows_HasGlobalLock()
     return false; // UNDONE: FIXME: !EmulatorNative::GetEmulatorNative()->AreInterruptsEnabled();
 }
 
-unsigned __int64 HAL_Windows_GetPerformanceTicks()
+uint64_t HAL_Windows_GetPerformanceTicks()
 {
     return 0; // UNDONE: FIXME: return EmulatorNative::GetEmulatorNative()->GetCurrentTicks();
 }
@@ -58,8 +58,6 @@ HAL_SYSTEM_CONFIG HalSystemConfig =
                                                    // unsigned int      DebuggerPorts[MAX_DEBUGGERS];
     DEBUGGER_PORT,
 
-    MESSAGING_PORT,
-
     DEBUG_TEXT_PORT,
     115200,
     0,  // STDIO = COM2 or COM1
@@ -67,6 +65,16 @@ HAL_SYSTEM_CONFIG HalSystemConfig =
     { 0, 0 },   // { SRAM1_MEMORY_Base, SRAM1_MEMORY_Size },
     { 0, 0 },   // { FLASH_MEMORY_Base, FLASH_MEMORY_Size },
 };
+
+bool ConfigurationManager_GetConfigurationBlock(void* configurationBlock, DeviceConfigurationOption configuration, uint32_t configurationIndex)
+{
+	return true;
+}
+
+bool ConfigurationManager_StoreConfigurationBlock(void* configurationBlock, DeviceConfigurationOption configuration, uint32_t configurationIndex, uint32_t blockSize)
+{
+	return true;
+}
 
 //const ConfigurationSector g_ConfigurationSector =
 //{
@@ -267,14 +275,15 @@ void __cdecl HAL_AddSoftRebootHandler(ON_SOFT_REBOOT_HANDLER handler)
 
 bool g_fDoNotUninitializeDebuggerPort = false;
 
-void __cdecl HAL_Initialize(void)
+void __cdecl nanoHAL_Initialize(void)
 {
-    // In the case of the Extensible Emulator, the work typically done here is
-    // carried out in EmulatorNative::Settings::System_Start(), but this ep is
-    // here to satisfy ClrStartup()
+	HAL_CONTINUATION::InitializeList();
+	HAL_COMPLETION::InitializeList();
+
+	Events_Initialize();
 }
 
-void __cdecl HAL_Uninitialize(void)
+void __cdecl nanoHAL_Uninitialize(void)
 {
     int i;
 
@@ -348,12 +357,12 @@ void CPU_ChangePowerLevel(POWER_LEVEL level)
 
 void CPU_Hibernate()
 {
-    signed __int64 start = ::HAL_Time_CurrentTime();
+    int64_t start = ::HAL_Time_CurrentTime();
 
     while(true)
     {
         //wait on SYSTEM_EVENT_FLAG_DEBUGGER_ACTIVITY as well??
-        unsigned int mask = ::Events_WaitForEvents( SLEEP_LEVEL__SLEEP, SYSTEM_EVENT_FLAG_COM_IN | SYSTEM_EVENT_HW_INTERRUPT /*| SYSTEM_EVENT_FLAG_BUTTON | SYSTEM_EVENT_FLAG_CHARGER_CHANGE*/, 1000);
+        unsigned int mask = ::Events_WaitForEvents( SLEEP_LEVEL__SLEEP, SYSTEM_EVENT_FLAG_COM_IN | SYSTEM_EVENT_HW_INTERRUPT /*| SYSTEM_EVENT_FLAG_BUTTON */, 1000);
 
         if(mask)
         {
@@ -380,18 +389,6 @@ void CPU_Shutdown()
 
 char nanoCLR_Dat_Start[512*1024];
 char nanoCLR_Dat_End  [1       ];
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool Piezo_Tone( unsigned int Frequency_Hertz, unsigned int Duration_Milliseconds )
-{
-    return true;
-}
-
-bool Piezo_IsEnabled()
-{
-    return FALSE;
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -438,27 +435,6 @@ void HAL_Windows_FastSleep( signed __int64 ticks )
 
 #pragma managed(push, off)
 
-void debug_printf( char const* format, ... )
-{
-    va_list arg_ptr;
-
-    va_start( arg_ptr, format );
-
-    int chars = hal_vprintf( format, arg_ptr );
-
-    va_end( arg_ptr );
-}
-
-void lcd_printf( char const * format, ... )
-{
-    va_list arg_ptr;
-
-    va_start( arg_ptr, format );
-
-    int chars = hal_vprintf( format, arg_ptr );
-
-    va_end( arg_ptr );
-}
 
 int hal_printf( const char* format, ... )
 {
@@ -506,9 +482,6 @@ int hal_vfprintf( COM_HANDLE stream, const char* format, va_list arg )
         DebuggerPort_Write( stream, buffer, chars); // skip null terminator
     //    break;
 
-    //case LCD_TRANSPORT:
-    //    break;
-
     //case FLASH_WRITE_TRANSPORT:
     //    _ASSERTE(FALSE);
     //}
@@ -533,6 +506,27 @@ int hal_snprintf( char* buffer, size_t len, const char* format, ... )
 int hal_vsnprintf( char* buffer, size_t len, const char* format, va_list arg )
 {
     return _vsnprintf_s( buffer, len, len-1/* force space for trailing zero*/, format, arg );
+}
+
+
+// Compares 2 ASCII strings case insensitive. Does not take locale into account.
+int hal_stricmp(const char * dst, const char * src)
+{
+	int f = 0, l = 0;
+
+	do
+	{
+		if (((f = (unsigned char)(*(dst++))) >= 'A') && (f <= 'Z'))
+		{
+			f -= 'A' - 'a';
+		}
+		if (((l = (unsigned char)(*(src++))) >= 'A') && (l <= 'Z'))
+		{
+			l -= 'A' - 'a';
+		}
+	} while (f && (f == l));
+
+	return(f - l);
 }
 
 #pragma managed(pop)
@@ -602,13 +596,6 @@ size_t CPU_GetCachableAddress( size_t address )
 size_t CPU_GetUncachableAddress( size_t address )
 {
     return address;
-}
-
-///////////////////////////////////////////////////////////////
-
-bool Charger_Status( unsigned int& Status )
-{
-    return true;
 }
 
 ///////////////////////////////////////////////////////////////

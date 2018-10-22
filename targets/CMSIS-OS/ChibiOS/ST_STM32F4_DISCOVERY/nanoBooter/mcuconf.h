@@ -4,8 +4,8 @@
 // See LICENSE file in the project root for full license information.
 //
 
-#ifndef _MCUCONF_H_
-#define _MCUCONF_H_
+#ifndef MCUCONF_H
+#define MCUCONF_H
 
 /*
  * STM32F4xx drivers configuration.
@@ -55,6 +55,24 @@
 #define STM32_BKPRAM_ENABLE                 FALSE
 
 /*
+ * IRQ system settings.
+ */
+#define STM32_IRQ_EXTI0_PRIORITY            6
+#define STM32_IRQ_EXTI1_PRIORITY            6
+#define STM32_IRQ_EXTI2_PRIORITY            6
+#define STM32_IRQ_EXTI3_PRIORITY            6
+#define STM32_IRQ_EXTI4_PRIORITY            6
+#define STM32_IRQ_EXTI5_9_PRIORITY          6
+#define STM32_IRQ_EXTI10_15_PRIORITY        6
+#define STM32_IRQ_EXTI16_PRIORITY           6
+#define STM32_IRQ_EXTI17_PRIORITY           15
+#define STM32_IRQ_EXTI18_PRIORITY           6
+#define STM32_IRQ_EXTI19_PRIORITY           6
+#define STM32_IRQ_EXTI20_PRIORITY           6
+#define STM32_IRQ_EXTI21_PRIORITY           15
+#define STM32_IRQ_EXTI22_PRIORITY           15
+
+/*
  * ADC driver system settings.
  */
 #define STM32_ADC_ADCPRE                    ADC_CCR_ADCPRE_DIV4
@@ -92,24 +110,6 @@
 #define STM32_DAC_DAC1_CH2_DMA_PRIORITY     2
 #define STM32_DAC_DAC1_CH1_DMA_STREAM       STM32_DMA_STREAM_ID(1, 5)
 #define STM32_DAC_DAC1_CH2_DMA_STREAM       STM32_DMA_STREAM_ID(1, 6)
-
-/*
- * EXT driver system settings.
- */
-#define STM32_EXT_EXTI0_IRQ_PRIORITY        6
-#define STM32_EXT_EXTI1_IRQ_PRIORITY        6
-#define STM32_EXT_EXTI2_IRQ_PRIORITY        6
-#define STM32_EXT_EXTI3_IRQ_PRIORITY        6
-#define STM32_EXT_EXTI4_IRQ_PRIORITY        6
-#define STM32_EXT_EXTI5_9_IRQ_PRIORITY      6
-#define STM32_EXT_EXTI10_15_IRQ_PRIORITY    6
-#define STM32_EXT_EXTI16_IRQ_PRIORITY       6
-#define STM32_EXT_EXTI17_IRQ_PRIORITY       15
-#define STM32_EXT_EXTI18_IRQ_PRIORITY       6
-#define STM32_EXT_EXTI19_IRQ_PRIORITY       6
-#define STM32_EXT_EXTI20_IRQ_PRIORITY       6
-#define STM32_EXT_EXTI21_IRQ_PRIORITY       15
-#define STM32_EXT_EXTI22_IRQ_PRIORITY       15
 
 /*
  * GPT driver system settings.
@@ -332,5 +332,4 @@
 // header for nanoFramework overlay drivers
 #include "mcuconf_nf.h"
 
-#endif /* _MCUCONF_H_ */
-
+#endif /* MCUCONF_H */

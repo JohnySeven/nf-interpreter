@@ -9,10 +9,6 @@
 #include <nanoCLR_Types.h>
 #include <CLRStartup.h>
 
-// FIXME 
-// these are dummy data, we'll have to figure out how to fill these after the build happens
-char nanoCLR_Dat_Start[100 ];
-char nanoCLR_Dat_End  [1 ];
 
 struct Settings
 {
@@ -44,8 +40,6 @@ struct Settings
         CLR_Debug::Printf( "Started Hardware.\r\n" );
 #endif
 
-        // UNDONE: FIXME: CLR_DBG_Debugger::Debugger_Discovery();
-
         m_fInitialized = true;
 
 
@@ -70,7 +64,7 @@ struct Settings
             // First verify that check sum in assembly object matches hardcoded check sum. 
             if ( assm->m_header->nativeMethodsChecksum != pNativeAssmData->m_checkSum )
             {
-                CLR_Debug::Printf("***********************************************************************\r\n");
+                CLR_Debug::Printf("\r\n\r\n***********************************************************************\r\n");
                 CLR_Debug::Printf("*                                                                     *\r\n");
                 CLR_Debug::Printf("* ERROR!!!!  Firmware version does not match managed code version!!!! *\r\n");
                 CLR_Debug::Printf("*                                                                     *\r\n");
@@ -101,7 +95,7 @@ struct Settings
 #if !defined(BUILD_RTM)
         CLR_Debug::Printf( "Create TS.\r\n" );
 #endif
-        // UNDONE: FIXME: NANOCLR_CHECK_HRESULT(LoadKnownAssemblies( 0 /*nanoCLR_Dat_Start*/, 0 /*nanoCLR_Dat_End*/ ));
+        //NANOCLR_CHECK_HRESULT(LoadKnownAssemblies( (char*)&__deployment_start__, (char*)&__deployment_end__ ));
 
 #if !defined(BUILD_RTM)
         CLR_Debug::Printf( "Loading Deployment Assemblies.\r\n" );
@@ -116,9 +110,7 @@ struct Settings
 #endif
         NANOCLR_CHECK_HRESULT(g_CLR_RT_TypeSystem.ResolveAll());
 
-        g_CLR_RT_Persistence_Manager.Initialize();
-
-        // UNDONE: FIXME: NANOCLR_CHECK_HRESULT(g_CLR_RT_TypeSystem.PrepareForExecution());
+        NANOCLR_CHECK_HRESULT(g_CLR_RT_TypeSystem.PrepareForExecution());
 
 #if defined(NANOCLR_PROFILE_HANDLER)
         CLR_PROF_Handler::Calibrate();
@@ -170,11 +162,18 @@ struct Settings
 
         const CLR_RECORD_ASSEMBLY* header;
         unsigned char * assembliesBuffer ;
-        signed int  headerInBytes = sizeof(CLR_RECORD_ASSEMBLY);
+        uint32_t  headerInBytes = sizeof(CLR_RECORD_ASSEMBLY);
         unsigned char * headerBuffer  = NULL;
 
-        while(TRUE)
+        while(stream.CurrentIndex < stream.Length)
         {
+            // check if there is enough stream length to continue
+            if((stream.Length - stream.CurrentIndex ) < headerInBytes)
+            {
+                // not enough stream to read, leave now
+                break;
+            }
+
             if(!BlockStorageStream_Read(&stream, &headerBuffer, headerInBytes )) break;
 
             header = (const CLR_RECORD_ASSEMBLY*)headerBuffer;
@@ -182,37 +181,45 @@ struct Settings
             // check header first before read
             if(!header->GoodHeader())
             {
-                break;
+                // check failed, try to continue to the next 
+                continue;
             }
 
-            unsigned int AssemblySizeInByte = ROUNDTOMULTIPLE(header->TotalSize(), CLR_UINT32);
+            unsigned int assemblySizeInByte = ROUNDTOMULTIPLE(header->TotalSize(), CLR_UINT32);
 
+            // advance stream beyond header
             BlockStorageStream_Seek(&stream, -headerInBytes, BlockStorageStream_SeekCurrent);
 
-            if(!BlockStorageStream_Read(&stream, &assembliesBuffer, AssemblySizeInByte)) break;
+            // read the assembly
+            if(!BlockStorageStream_Read(&stream, &assembliesBuffer, assemblySizeInByte)) break;
 
             header = (const CLR_RECORD_ASSEMBLY*)assembliesBuffer;
 
             if(!header->GoodAssembly())
             {
-                break;
+                // check failed, try to continue to the next 
+                continue;
             }
                 
             // we have good Assembly 
-
             CLR_RT_Assembly* assm;
 
+#if !defined(BUILD_RTM)            
             CLR_Debug::Printf( "Attaching deployed file.\r\n" );
-
+#endif
+            
             // Creates instance of assembly, sets pointer to native functions, links to g_CLR_RT_TypeSystem 
             if (FAILED(LoadAssembly(header, assm)))
-            {   
-                break;
+            {
+                // load failed, try to continue to the next 
+                continue;
             }
-            assm->m_flags |= CLR_RT_Assembly::c_Deployed;
+
+            // load successfull, mark as deployed
+            assm->m_flags |= CLR_RT_Assembly::Deployed;
         }
                 
-        NANOCLR_NOCLEANUP();
+        NANOCLR_NOCLEANUP_NOLABEL();
     }
 
     HRESULT LoadDeploymentAssemblies()
@@ -238,9 +245,11 @@ struct Settings
 
     void Cleanup()
     {
-        g_CLR_RT_Persistence_Manager.Uninitialize();
-
-        // UNDONE: FIXME: CLR_RT_ExecutionEngine::DeleteInstance();
+        if(!CLR_EE_REBOOT_IS(NoShutdown))
+        {
+            // OK to delete execution engine 
+            CLR_RT_ExecutionEngine::DeleteInstance();
+        }
 
         m_fInitialized = false;
     }
@@ -270,6 +279,7 @@ void ClrStartup(CLR_SETTINGS params)
 
 #if !defined(BUILD_RTM)
         CLR_Debug::Printf( "\r\nnanoCLR (Build %d.%d.%d.%d)\r\n\r\n", VERSION_MAJOR, VERSION_MINOR, VERSION_BUILD, VERSION_REVISION );
+        CLR_Debug::Printf( "\r\n%s\r\n\r\n", OEMSYSTEMINFOSTRING );
 #endif
 
         CLR_RT_Memory::Reset();
@@ -300,13 +310,13 @@ void ClrStartup(CLR_SETTINGS params)
         if( CLR_EE_DBG_IS_NOT( RebootPending ))
         {
 #if defined(NANOCLR_ENABLE_SOURCELEVELDEBUGGING)
-            CLR_EE_DBG_SET_MASK(State_ProgramExited, State_Mask);
-            CLR_EE_DBG_EVENT_BROADCAST(CLR_DBG_Commands::c_Monitor_ProgramExit, 0, NULL, WP_Flags::c_NonCritical);
+            CLR_EE_DBG_SET_MASK(StateProgramExited, StateMask);
+            CLR_EE_DBG_EVENT_BROADCAST(CLR_DBG_Commands::c_Monitor_ProgramExit, 0, NULL, WP_Flags_c_NonCritical);
 #endif //#if defined(NANOCLR_ENABLE_SOURCELEVELDEBUGGING)
 
             if(params.EnterDebuggerLoopAfterExit)
             {
-                // UNDONE: FIXME: CLR_DBG_Debugger::Debugger_WaitForCommands();
+                CLR_DBG_Debugger::Debugger_WaitForCommands();
             }
         }
 
@@ -318,19 +328,14 @@ void ClrStartup(CLR_SETTINGS params)
             {
                 softReboot = true;
 
-                params.WaitForDebugger = CLR_EE_REBOOT_IS(ClrOnlyStopDebugger);
+                params.WaitForDebugger = CLR_EE_REBOOT_IS(WaitForDebugger);
                 
                 s_ClrSettings.Cleanup();
 
-                // UNDONE: FIXME: HAL_Uninitialize();
-
-                // UNDONE: FIXME: SmartPtr_IRQ::ForceDisabled();
+                nanoHAL_Uninitialize();
 
                 //re-init the hal for the reboot (initially it is called in bootentry)
-                // UNDONE: FIXME: HAL_Initialize();
-
-                // make sure interrupts are back on
-                // UNDONE: FIXME: SmartPtr_IRQ::ForceEnabled();
+                nanoHAL_Initialize();
             }
             else
             {

@@ -14,6 +14,7 @@
 
 void hal_fprintf_SetLoggingCallback( LOGGING_CALLBACK fpn )
 {
+    (void)fpn;
     NATIVE_PROFILE_PAL_CRT();
 
 }
@@ -22,76 +23,109 @@ void hal_fprintf_SetLoggingCallback( LOGGING_CALLBACK fpn )
 
 //--//
 
-#if !defined(PLATFORM_EMULATED_FLOATINGPOINT)
+#if defined(PLATFORM_EMULATED_FLOATINGPOINT)
 
-int hal_snprintf_float( char* buffer, size_t len, const char* format, float f )
+// no floating point, fixed point 
+
+int hal_snprintf_float( char* buffer, size_t len, const char* format, int32_t f )
 {
     NATIVE_PROFILE_PAL_CRT();
-    return 0;
+
+    uint32_t   i ;
+    uint32_t  dec;
+
+    if ( f < 0 ) 
+    {
+        // negative number
+        i = (uint32_t) -f  ;
+        dec = i & (( 1<<HAL_FLOAT_SHIFT) -1 );
+        i = (i >>HAL_FLOAT_SHIFT);   
+
+        if (dec !=0) dec = (dec * (uint32_t)HAL_FLOAT_PRECISION + (1<< (HAL_FLOAT_SHIFT-1))) >>HAL_FLOAT_SHIFT;  
+
+        return hal_snprintf( buffer, len, "-%d.%03u", i, (uint32_t)dec);
+
+    }
+    else
+    {
+        // positive number
+        i = (uint32_t) f  ;
+        dec = f & (( 1<<HAL_FLOAT_SHIFT) -1 );
+        i =(uint32_t)( i >>HAL_FLOAT_SHIFT); 
+
+        if (dec !=0) dec = (dec * (uint32_t)HAL_FLOAT_PRECISION + (1<< (HAL_FLOAT_SHIFT-1))) >>HAL_FLOAT_SHIFT;  
+
+        return hal_snprintf( buffer, len, "%d.%03u", i, (uint32_t)dec);
+    }
 }
 
-int hal_snprintf_double( char* buffer, size_t len, const char* format, double d )
+int hal_snprintf_double( char* buffer, size_t len, const char* format, int64_t& d )
 {
     NATIVE_PROFILE_PAL_CRT();
-    return 0;
+
+    uint64_t i;
+    uint32_t  dec; // 32 bit is enough for decimal part
+
+    if ( d < 0 ) 
+    {
+        // negative number
+        i = (uint64_t)-d;
+        
+        i += ((1 << (HAL_DOUBLE_SHIFT-1)) / HAL_DOUBLE_PRECISION); // add broad part of rounding increment before split
+
+        dec = i & (( 1<<HAL_DOUBLE_SHIFT) -1 );
+        i = i >> HAL_DOUBLE_SHIFT ;
+
+        if (dec !=0)  dec = (dec * HAL_DOUBLE_PRECISION + ((1 << (HAL_DOUBLE_SHIFT-1)) % HAL_DOUBLE_PRECISION)) >> HAL_DOUBLE_SHIFT;
+
+        return hal_snprintf( buffer, len, "-%lld.%04u", (int64_t)i, (uint32_t)dec);
+
+    }
+    else
+    {
+
+        // positive number
+        i = (uint64_t)d;
+
+        i += ((1 << (HAL_DOUBLE_SHIFT-1)) / HAL_DOUBLE_PRECISION); // add broad part of rounding increment before split
+
+        dec = i & (( 1<<HAL_DOUBLE_SHIFT) -1 );
+        i = i >> HAL_DOUBLE_SHIFT;
+        
+        if (dec !=0)  dec = (dec * HAL_DOUBLE_PRECISION + ((1 << (HAL_DOUBLE_SHIFT-1)) % HAL_DOUBLE_PRECISION)) >> HAL_DOUBLE_SHIFT;
+
+        return hal_snprintf( buffer, len, "%lld.%04u", (int64_t)i, (uint32_t)dec);
+    }
 }
 
 #else
-int hal_snprintf_float( char* buffer, size_t len, const char* format, signed int f )
-{
-    NATIVE_PROFILE_PAL_CRT();
-    return 0;
-}
-
-int hal_snprintf_double( char* buffer, size_t len, const char* format, signed __int64& d )
-{
-    NATIVE_PROFILE_PAL_CRT();
-    return 0;
-}
 
 #endif
 
+// because debug_printf needs to be called in both C and C++ we need a proxy to allow it to be called in 'C'
+extern "C" {
 
-int hal_printf( const char* format, ... )
-{
-    NATIVE_PROFILE_PAL_CRT();
-    return 0;
+#if !defined(BUILD_RTM)
+    
+    void debug_printf(const char* format, ...)
+    {
+        char buffer[256];
+        va_list arg_ptr;
+    
+        va_start( arg_ptr, format );
+    
+        int len = vsnprintf( buffer, sizeof(buffer)-1, format, arg_ptr );
+
+        DebuggerPort_Write( HalSystemConfig.stdio, buffer, len, 0 ); // skip null terminator
+    
+        va_end( arg_ptr );
+    }
+
+#else
+    __inline void debug_printf( const char *format, ... ) {}
+#endif  // !defined(BUILD_RTM)
 }
 
-int hal_vprintf( const char* format, va_list arg )
-{
-    NATIVE_PROFILE_PAL_CRT();
-    return 0;
-}
-
-
-int hal_fprintf( COM_HANDLE stream, const char* format, ... )
-{
-    NATIVE_PROFILE_PAL_CRT();
-    return 0;
-}
-
-int hal_vfprintf( COM_HANDLE stream, const char* format, va_list arg )
-{
-    NATIVE_PROFILE_PAL_CRT();
-
-    return 0;
-}
-
-int hal_snprintf( char* buffer, size_t len, const char* format, ... )
-{
-    NATIVE_PROFILE_PAL_CRT();
-    return 0;
-}
-
-
-int hal_vsnprintf( char* buffer, size_t len, const char* format, va_list arg )
-{
-    NATIVE_PROFILE_PAL_CRT();
-    return 0;
-}
-
-#if !defined(PLATFORM_BLACKFIN) && !defined(PLATFORM_SH)
 int hal_strcpy_s ( char* strDst, size_t sizeInBytes, const char* strSrc )
 {
     NATIVE_PROFILE_PAL_CRT();
@@ -148,9 +182,6 @@ int hal_strncmp_s ( const char* str1, const char* str2, size_t num )
 
 #define strncmp DoNotUse_*strncmp []
 }
-
-#endif //!defined(PLATFORM_BLACKFIN) && !defined(PLATFORM_SH)
-
 
 // Compares 2 ASCII strings case insensitive. Does not take locale into account.
 int hal_stricmp( const char * dst, const char * src )

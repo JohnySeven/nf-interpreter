@@ -9,7 +9,7 @@
 
 # check if the series name is supported 
 
-set(CHIBIOS_SUPPORTED_SERIES "STM32F0xx" "STM32F4xx" "STM32F7xx" CACHE INTERNAL "supported series names for ChibiOS")
+set(CHIBIOS_SUPPORTED_SERIES "STM32L0xx" "STM32F0xx" "STM32F4xx" "STM32F7xx" "STM32H7xx" CACHE INTERNAL "supported series names for ChibiOS")
 list(FIND CHIBIOS_SUPPORTED_SERIES ${TARGET_SERIES} TARGET_SERIES_NAME_INDEX)
 if(TARGET_SERIES_NAME_INDEX EQUAL -1)
     message(FATAL_ERROR "\n\nSorry but ${TARGET_SERIES} is not supported at this time...\nYou can wait for that to be added or you might want to contribute and start working on a PR for that.\n\n")
@@ -23,21 +23,21 @@ include(CHIBIOS_${TARGET_SERIES}_GCC_options)
 # message("ChibiOS board series is ${TARGET_SERIES}") # debug helper
 
 # set include directories for ChibiOS
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os) 
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/license)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/common/ARMCMx)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/include)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/boards/${CHIBIOS_BOARD})
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/osal/rt)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/oslib/include)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/rt/include)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/rt/ports/ARMCMx)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/rt/ports/ARMCMx/compilers/GCC)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/ext/CMSIS/include)
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/ext/CMSIS/ST/${TARGET_SERIES})
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ports/ARMCMx/compilers/GCC)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/ports/STM32/${TARGET_SERIES})
-list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/rt/ports/ARMCMx/cmsis_os)
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ports/ARMCMx)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ports/ARMCMx/compilers/GCC)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/abstractions/cmsis_os)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/startup/ARMCMx/compilers/GCC)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ext/CMSIS/include)
+list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/ext/CMSIS/ST/${TARGET_SERIES})
 
 # append include directory for boards in the nanoFramework ChibiOS 'overlay'
 list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/boards/${CHIBIOS_BOARD})
@@ -52,32 +52,34 @@ list(APPEND CHIBIOS_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/targets-community/CMSIS-O
 set(CHIBIOS_SRCS
     # HAL-OSAL files
     hal.c
-    st.c
+    hal_st.c
     
     hal_buffers.c
     hal_queues.c
     hal_mmcsd.c
     
-    adc.c
-    can.c
-    dac.c
-    ext.c
-    gpt.c
-    i2c.c
-    i2s.c
-    icu.c
-    mac.c
-    mmc_spi.c
-    pal.c
-    pwm.c
-    rtc.c
-    sdc.c
-    serial.c
-    serial_usb.c
-    spi.c
-    uart.c
-    usb.c
-    wdg.c
+    hal_adc.c
+    hal_can.c
+    hal_crypto.c
+    hal_dac.c
+    hal_ext.c
+    hal_gpt.c
+    hal_i2c.c
+    hal_i2s.c
+    hal_icu.c
+    hal_mac.c
+    hal_mmc_spi.c
+    hal_pal.c
+    hal_pwm.c
+    hal_qspi.c
+    hal_rtc.c
+    hal_sdc.c
+    hal_serial.c
+    hal_serial_usb.c
+    hal_spi.c
+    hal_uart.c
+    hal_usb.c
+    hal_wdg.c
 
     # OSAL RT
     osal.c
@@ -85,6 +87,7 @@ set(CHIBIOS_SRCS
     # RT
     chsys.c
     chdebug.c
+    chtrace.c
     chvt.c
     chschd.c
     chthreads.c
@@ -102,8 +105,10 @@ set(CHIBIOS_SRCS
     chmboxes.c
     chmemcore.c
     chmempools.c
+    chfactory.c
 
-    chqueues.c
+    # required to use malloc and other newlib stuff
+    syscalls.c
 
     # CMSIS
     cmsis_os.c
@@ -114,27 +119,28 @@ set(CHIBIOS_SRCS
 )
 
 foreach(SRC_FILE ${CHIBIOS_SRCS})
-    set(CHIBIOS_SRC_FILE SRC_FILE-NOTFOUND)
+    set(CHIBIOS_SRC_FILE SRC_FILE -NOTFOUND)
     find_file(CHIBIOS_SRC_FILE ${SRC_FILE}
         PATHS 
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/src
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/osal/rt
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/rt/src
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/oslib/src
-            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/rt/ports/ARMCMx/cmsis_os
             ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/common/abstractions/cmsis_os
-        
-            # this path hint is for the usual location of the board.c file
-            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/boards/${CHIBIOS_BOARD}
+            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/various
+
+            # the following hint order is for the board.c file, it has to match the search order of the main CMake otherwise we'll pick one that is the pair
+            # this path hint is for OEM boards for which the board file(s) are probably located directly in the "target" folder along with remaining files
+            ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/${CHIBIOS_BOARD}
          
             # this path hint is for the alternative boards folder in the nanoFramework ChibiOS 'overlay'
             ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/nf-overlay/os/hal/boards/${CHIBIOS_BOARD}
+            
+            # this path hint is for the usual location of the board.c file
+            ${PROJECT_BINARY_DIR}/ChibiOS_Source/os/hal/boards/${CHIBIOS_BOARD}
 
             # this path hint is for the alternative boards folder in the nanoFramework ChibiOS 'overlay' provideded by the community
             ${PROJECT_SOURCE_DIR}/targets-community/CMSIS-OS/ChibiOS/nf-overlay/os/hal/boards/${CHIBIOS_BOARD}
-
-            # this path hint is for OEM boards for which the board file(s) are probably located directly in the "target" folder along with remaining files
-            ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/${CHIBIOS_BOARD}
 
             # this path hint is for Community provided boards that are located directly in the "targets-community" folder
             ${PROJECT_SOURCE_DIR}/targets-community/CMSIS-OS/ChibiOS/${CHIBIOS_BOARD}

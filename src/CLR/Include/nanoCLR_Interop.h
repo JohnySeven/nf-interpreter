@@ -7,11 +7,12 @@
 #define _NANOCLR_INTEROP_H_
 
 #include <nanoCLR_PlatformDef.h>
+#include <nanoCLR_Types.h>
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-__nfweak extern HRESULT NANOCLR_DEBUG_PROCESS_EXCEPTION( HRESULT hr, const char* szFunc, const char* szFile, int line );
+ extern HRESULT NANOCLR_DEBUG_PROCESS_EXCEPTION( HRESULT hr, const char* szFunc, const char* szFile, int line );
 
 #if defined(_WIN32)
 
@@ -35,33 +36,40 @@ __nfweak extern HRESULT NANOCLR_DEBUG_PROCESS_EXCEPTION( HRESULT hr, const char*
 #endif
 
 
-#define NANOCLR_HEADER()               HRESULT hr
-#define NANOCLR_CHECK_HRESULT(expr)    { if(FAILED(hr = (expr))) NANOCLR_LEAVE(); }
-#define NANOCLR_EXIT_ON_SUCCESS(expr)  { if(SUCCEEDED(hr = (expr))) NANOCLR_LEAVE(); }
-#define NANOCLR_SET_AND_LEAVE(expr)    { hr = (expr); NANOCLR_LEAVE(); }
-#define NANOCLR_CLEANUP()              hr = S_OK; nanoCLR_Cleanup:
-#define NANOCLR_CLEANUP_END()          NANOCLR_RETURN()
-#define NANOCLR_NOCLEANUP()            NANOCLR_CLEANUP(); NANOCLR_CLEANUP_END()
-#define NANOCLR_NOCLEANUP_NOLABEL()    hr = S_OK; NANOCLR_RETURN()
-#define FAULT_ON_NULL(ptr)             if(!(ptr)) NANOCLR_SET_AND_LEAVE(CLR_E_NULL_REFERENCE)
-#define FAULT_ON_NULL_ARG(ptr)         if(!(ptr)) NANOCLR_SET_AND_LEAVE(CLR_E_ARGUMENT_NULL)
+#define NANOCLR_HEADER()							HRESULT hr
+#define NANOCLR_CHECK_HRESULT(expr)					{ if(FAILED(hr = (expr))) NANOCLR_LEAVE(); }
+#define NANOCLR_EXIT_ON_SUCCESS(expr)				{ if(SUCCEEDED(hr = (expr))) NANOCLR_LEAVE(); }
+#define NANOCLR_SET_AND_LEAVE(expr)					{ hr = (expr); NANOCLR_LEAVE(); }
+#if defined(_MSC_VER)
+#define NANOCLR_MSG_SET_AND_LEAVE(expr, msg)		{ wprintf(msg); hr = (expr); NANOCLR_LEAVE(); }
+#define NANOCLR_MSG1_SET_AND_LEAVE(expr, msg, arg)	{ wprintf(msg, arg); hr = (expr); NANOCLR_LEAVE(); }
+#else
+#define NANOCLR_MSG_SET_AND_LEAVE(expr, msg)		{ hr = (expr); NANOCLR_LEAVE(); }
+#define NANOCLR_MSG1_SET_AND_LEAVE(expr, msg, arg)	{ hr = (expr); NANOCLR_LEAVE(); }
+#endif
+#define NANOCLR_CLEANUP()							hr = S_OK; nanoCLR_Cleanup:
+#define NANOCLR_CLEANUP_END()						NANOCLR_RETURN()
+#define NANOCLR_NOCLEANUP()							NANOCLR_CLEANUP(); NANOCLR_CLEANUP_END()
+#define NANOCLR_NOCLEANUP_NOLABEL()					hr = S_OK; NANOCLR_RETURN()
+#define FAULT_ON_NULL(ptr)							if(!(ptr)) NANOCLR_SET_AND_LEAVE(CLR_E_NULL_REFERENCE)
+#define FAULT_ON_NULL_ARG(ptr)						if(!(ptr)) NANOCLR_SET_AND_LEAVE(CLR_E_ARGUMENT_NULL)
 
 
 //    Correspondence between CLR C# and C++ native types:
-//    CLR Type          C/C++ type	    C/C++ Ref Type
+//    CLR Type          C/C++ type	            C/C++ Ref Type
 
 //    System.Byte       unsigned char           unsigned char&
-//    System.UInt16     unsigned short int          unsigned short int&
-//    System.UInt32     unsigned int          unsigned int&
-//    System.UInt64     unsigned __int64          unsigned __int64&
-//    System.Char       char            char &
-//    System.SByte      signed char            signed char &
-//    System.Int16      signed short int           signed short int&
-//    System.Int32      signed int           signed int&
-//    System.Int64      signed __int64           signed __int64&
-//    System.Single     float           float&
-//    System.Double     double          double&
-//    System.String     const char *    char *
+//    System.UInt16     unsigned short int      unsigned short int&
+//    System.UInt32     unsigned int            unsigned int&
+//    System.UInt64     unsigned __int64        unsigned __int64&
+//    System.Char       char                    char &
+//    System.SByte      signed char             signed char &
+//    System.Int16      signed short int        signed short int&
+//    System.Int32      signed int              signed int&
+//    System.Int64      signed __int64          signed __int64&
+//    System.Single     float                   float&
+//    System.Double     double                  double&
+//    System.String     const char *            char *
 //    System.Byte[]     unsigned char *         Same as C/C++ type
 
 // Forward declaration for managed stack frame.
@@ -92,12 +100,15 @@ struct CLR_RT_NativeAssemblyData
     const char                 *m_szAssemblyName;
 
     // Check sum for the assembly.
-    unsigned int                      m_checkSum;
+    unsigned int               m_checkSum;
 
     // Pointer to array of functions that implement native methods.
     // It could be different type of the function depending if it is assembly Interop Method
     // or function enabling Interrupts by user driver.
     const void                 *m_pNativeMethods;
+
+    // Assembly version
+    CLR_RECORD_VERSION          m_Version;
 };
 
 // Looks up in interop assemblies table for assembly with specified name.
@@ -345,7 +356,7 @@ CLR_RT_HeapBlock* Interop_Marshal_RetrieveManagedObject( CLR_RT_StackFrame &stac
 **
 ** Returns:   Reference to the field.
 **********************************************************************/
-unsigned char  &Interop_Marshal_GetField_bool  ( CLR_RT_HeapBlock *pThis, unsigned int fieldIndex );
+bool  &Interop_Marshal_GetField_bool  ( CLR_RT_HeapBlock *pThis, unsigned int fieldIndex );
 unsigned char  &Interop_Marshal_GetField_UINT8 ( CLR_RT_HeapBlock *pThis, unsigned int fieldIndex );
 unsigned short int &Interop_Marshal_GetField_UINT16( CLR_RT_HeapBlock *pThis, unsigned int fieldIndex );
 unsigned int &Interop_Marshal_GetField_UINT32( CLR_RT_HeapBlock *pThis, unsigned int fieldIndex );
@@ -431,9 +442,9 @@ typedef HRESULT (*InterruptServiceProc)( CLR_RT_HeapBlock_NativeEventDispatcher 
 struct CLR_RT_DriverInterruptMethods
 
 {
-    InitializeInterruptsProc      m_InitProc;
-    EnableorDisableInterruptsProc m_EnableProc;
-    CleanupInterruptsProc         m_CleanupProc;
+    InitializeInterruptsProc      initProcessor;
+    EnableorDisableInterruptsProc enableProcessor;
+    CleanupInterruptsProc         cleanupProcessor;
 };
 
 // Randomly generated 32 bit number.
@@ -445,10 +456,10 @@ CLR_RT_HeapBlock_NativeEventDispatcher *CreateNativeEventInstance( CLR_RT_StackF
 
 // Saves data from ISR. The data from this queue is used to call managed callbacks.
 // Should be called from ISR.
-__nfweak void SaveNativeEventToHALQueue( CLR_RT_HeapBlock_NativeEventDispatcher *pContext, unsigned int data1, unsigned int data2 );
+ void SaveNativeEventToHALQueue( CLR_RT_HeapBlock_NativeEventDispatcher *pContext, uint32_t data1, uint32_t data2 );
 
 // Cleans up the data in the queue after interrupts were closed and no managed callbacks are expected.
-__nfweak void CleanupNativeEventsFromHALQueue( CLR_RT_HeapBlock_NativeEventDispatcher *pContext );
+ void CleanupNativeEventsFromHALQueue( CLR_RT_HeapBlock_NativeEventDispatcher *pContext );
 
 void CLR_RetrieveCurrentMethod( unsigned int& assmIdx, unsigned int& methodIdx );
 

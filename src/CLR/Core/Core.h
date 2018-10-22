@@ -14,16 +14,12 @@
 //#include <nanoCLR_Stream.h>
 //#include <nanoCLR_Xml.h>
 //#include <nanoCLR_Application.h>
-//#if defined(CLR_COMPONENTIZATION_USE_HANDLER)
-//#include <nanoCLR_Handler.h>
-//#endif
 //
 //#include <nanoCLR_ParseOptions.h>
 //
-#include <CorLib_Native.h>
+#include <corlib_native.h>
 //#include <SPOT_native.h>
 //#include <SPOT_hardware_native.h>
-
 #include <nanoCLR_Runtime__HeapBlock.h>
 
 #endif // _NANOCLR_CORE_H_

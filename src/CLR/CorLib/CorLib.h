@@ -12,7 +12,12 @@
 //#include <nanoCLR_Graphics.h>
 //#include <nanoCLR_Hardware.h>
 
-#include "CorLib_Native.h"
+#include "corlib_native.h"
+#include "nanoCRT.h"
+
+#if !defined(_WIN32)
+#include <printf.h>
+#endif // !defined(_WIN32)
 
 #endif
 

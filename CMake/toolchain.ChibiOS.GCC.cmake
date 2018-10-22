@@ -1,16 +1,27 @@
+#
+# Copyright (c) 2017 The nanoFramework project contributors
+# See LICENSE file in the project root for full license information.
+#
+
 INCLUDE(CMakeForceCompiler)
 # if( DEFINED CMAKE_CROSSCOMPILING )
 #     # subsequent toolchain loading is not really needed
 #     return()
 # endif()
 
-# check for toolchain path
-if(NOT TOOLCHAIN_PREFIX)
-     message(STATUS "\n-- ########################################\nNo TOOLCHAIN_PREFIX specified, need one!\nCall CMake with -DTOOLCHAIN_PREFIX=\"<path_to_your_gcc_toolchain>\"\n specifing the path to your GCC toolchain (ex: E:/GNU_Tools_ARM_Embedded/5_4_2016q3)")
-     message(STATUS "\nNOTE: mind the forward slash in the path, without trailing slash.)")
-     message(STATUS "########################################\n\n")
-     message(FATAL_ERROR "No TOOLCHAIN_PREFIX specified")
-endif()
+
+###################################################
+# set C and C++ flags for compiler detection tests
+###################################################
+# IMPORTANT: these flags need to be removed after 
+# the compiler detection otherwise they'll get 
+# added to all compiler build calls and 
+# will colide with the use of nano.specs
+###################################################
+set(CMAKE_C_FLAGS_INIT "-specs=nosys.specs")
+set(CMAKE_CXX_FLAGS_INIT "-specs=nosys.specs")
+###################################################
+
 
 # set toolchain directories
 set(TOOLCHAIN_BIN_DIR ${TOOLCHAIN_PREFIX}/bin)
@@ -31,40 +42,21 @@ endmacro()
 # setup C compiler
 if(NOT CMAKE_C_COMPILER)
     SET_COMPILER_VAR(C_COMPILER gcc)
-   if(CMAKE_C_COMPILER)
-      CMAKE_FORCE_C_COMPILER(${CMAKE_C_COMPILER} GNU)
-   endif()
 endif()
-SET_COMPILER_VAR(C_COMPILER gcc)
 
 # setup C++ compiler
 if(NOT CMAKE_CXX_COMPILER)
     SET_COMPILER_VAR(CXX_COMPILER g++)
-   if(CMAKE_CXX_COMPILER)
-      CMAKE_FORCE_CXX_COMPILER(${CMAKE_CXX_COMPILER} GNU)
-   endif()
 endif()
 
 # setup Assembler compiler
 SET_COMPILER_VAR(ASM-ATT_COMPILER as)
- 
-# other toolchain configurations  
+
+# other toolchain configurations
 set(CMAKE_OBJCOPY ${TOOLCHAIN_BIN_DIR}/arm-none-eabi-objcopy CACHE INTERNAL "objcopy tool")
 set(CMAKE_OBJDUMP ${TOOLCHAIN_BIN_DIR}/arm-none-eabi-objdump CACHE INTERNAL "objdump tool")
 set(CMAKE_SIZE ${TOOLCHAIN_BIN_DIR}/arm-none-eabi-size CACHE INTERNAL "size tool")
 set(CMAKE_DEBUGER ${TOOLCHAIN_BIN_DIR}/arm-none-eabi-gdb CACHE INTERNAL "debuger")
-
-# set debug flags
-set(CMAKE_C_FLAGS_DEBUG " -Og -femit-class-debug-always -g3 -ggdb" CACHE INTERNAL "c compiler flags debug")
-set(CMAKE_CXX_FLAGS_DEBUG " -Og -femit-class-debug-always -g3 -ggdb" CACHE INTERNAL "cxx compiler flags debug")
-set(CMAKE_ASM_FLAGS_DEBUG " -g3 -ggdb" CACHE INTERNAL "asm compiler flags debug")
-set(CMAKE_EXE_LINKER_FLAGS_DEBUG "" CACHE INTERNAL "linker flags debug")
-
-# set release flags
-set(CMAKE_C_FLAGS_RELEASE " -Os -flto" CACHE INTERNAL "c compiler flags release")
-set(CMAKE_CXX_FLAGS_RELEASE " -Os -flto" CACHE INTERNAL "cxx compiler flags release")
-set(CMAKE_ASM_FLAGS_RELEASE "" CACHE INTERNAL "asm compiler flags release")
-set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-flto" CACHE INTERNAL "linker flags release")
 
 # root paths to search on the filesystem for cross-compiling
 set(CMAKE_FIND_ROOT_PATH ${TOOLCHAIN_PREFIX}/arm-none-eabi ${EXTRA_FIND_PATH})
@@ -72,7 +64,17 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
-function(CHIBIOS_ADD_HEX_BIN_DUMP_TARGETS TARGET)
+# set required C and C++ standard for ALL targets
+set(CMAKE_C_STANDARD 11 CACHE INTERNAL "C standard for all targets")
+set(CMAKE_CXX_STANDARD 11 CACHE INTERNAL "C++ standard for all targets")
+
+# set all C and C++ extensions to be OFF on ALL targets
+# this forces the use of -std=c11 and -std=c++11 instead of -std=gnu11 and -std=gnu++11
+set(CMAKE_C_EXTENSIONS OFF CACHE INTERNAL "C compiler extensions OFF")
+set(CMAKE_CXX_EXTENSIONS OFF CACHE INTERNAL "C++ compiler extensions OFF")
+
+
+function(NF_ADD_HEX_BIN_DUMP_TARGETS TARGET)
     if(EXECUTABLE_OUTPUT_PATH)
         set(FILENAME "${EXECUTABLE_OUTPUT_PATH}/${TARGET}")
     else()
@@ -86,11 +88,88 @@ function(CHIBIOS_ADD_HEX_BIN_DUMP_TARGETS TARGET)
     add_custom_target(${TARGET}.dump DEPENDS ${TARGET} COMMAND ${CMAKE_OBJDUMP} -d -EL -S ${FILENAME} ${FILENAME}.dump)
 endfunction()
 
-function(CHIBIOS_PRINT_SIZE_OF_TARGETS TARGET)
+
+function(NF_PRINT_SIZE_OF_TARGETS TARGET)
     if(EXECUTABLE_OUTPUT_PATH)
       set(FILENAME "${EXECUTABLE_OUTPUT_PATH}/${TARGET}")
     else()
       set(FILENAME "${TARGET}")
     endif()
-    add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_SIZE} ${FILENAME})
+    add_custom_command(TARGET ${TARGET} POST_BUILD COMMAND ${CMAKE_SIZE} -A -x ${FILENAME})
+endfunction()
+
+
+function(NF_SET_OPTIMIZATION_OPTIONS TARGET) 
+
+    target_compile_options(${TARGET} PRIVATE
+        $<$<CONFIG:Debug>:-Og -femit-class-debug-always -g3 -ggdb>
+        $<$<CONFIG:Release>:-O3 -flto -fuse-linker-plugin -fno-fat-lto-objects>
+        $<$<CONFIG:MinSizeRel>:-Os -flto -fuse-linker-plugin -fno-fat-lto-objects>
+        $<$<CONFIG:RelWithDebInfo>:-Os -femit-class-debug-always -g3 -ggdb>
+    )
+
+endfunction()
+
+
+function(NF_SET_LINK_MAP TARGET) 
+
+    # need to remove the .elf suffix from target name
+    string(FIND ${TARGET} "." TARGET_EXTENSION_DOT_INDEX)
+    string(SUBSTRING ${TARGET} 0 ${TARGET_EXTENSION_DOT_INDEX} TARGET_SHORT)
+    
+    # add linker flags to generate map file
+    set_property(TARGET ${TARGET_SHORT}.elf APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-Map=${PROJECT_SOURCE_DIR}/build/${TARGET_SHORT}.map,--library-path=${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/common")
+
+endfunction()
+
+
+function(NF_SET_COMPILER_DEFINITIONS TARGET)
+
+    # definition for platform (always ARM here)
+    target_compile_definitions(${TARGET} PUBLIC "-DPLATFORM_ARM ")
+
+    # build types that have debugging capabilities AND are NOT RTM have to have the define 'NANOCLR_ENABLE_SOURCELEVELDEBUGGING'
+    if((NOT NF_BUILD_RTM) OR NF_FEATURE_DEBUGGER)
+        target_compile_definitions(${TARGET} PUBLIC "-DNANOCLR_ENABLE_SOURCELEVELDEBUGGING ")
+    endif()
+
+    # set compiler definition for RTM build option
+    if(NF_BUILD_RTM)
+        target_compile_definitions(${TARGET} PUBLIC -DBUILD_RTM)
+    endif()
+
+    # set compiler definition for using Application Domains feature
+    if(NF_FEATURE_USE_APPDOMAINS)
+        target_compile_definitions(${TARGET} PUBLIC -DNANOCLR_USE_APPDOMAINS)
+    endif()
+
+    # set compiler definition for implementing (or not) CRC32 in Wire Protocol
+    if(NF_WP_IMPLEMENTS_CRC32)
+        target_compile_definitions(${TARGET} PUBLIC -DWP_IMPLEMENTS_CRC32)
+    endif()
+
+    # set definition for Wire Protocol trace mask
+    target_compile_definitions(${TARGET} PUBLIC -DTRACE_MASK=${WP_TRACE_MASK})
+
+    # set compiler definition regarding inclusion of trace messages and checks on CLR
+    if(NF_PLATFORM_NO_CLR_TRACE)
+        target_compile_definitions(${TARGET} PUBLIC -DPLATFORM_NO_CLR_TRACE=1)
+    endif()
+
+    # set compiler definition regarding CLR IL inlining
+    if(NF_CLR_NO_IL_INLINE)
+        target_compile_definitions(${TARGET} PUBLIC -DNANOCLR_NO_IL_INLINE=1)
+    endif()
+
+    # include any extra compiler definitions comming from extra args
+    target_compile_definitions(${TARGET} PUBLIC ${ARGN})
+
+endfunction()
+
+
+function(NF_SET_LINKER_FILE TARGET LINKER_FILE_NAME)
+
+    # set linker file name
+    set_target_properties(${TARGET} PROPERTIES LINK_FLAGS "-T${LINKER_FILE_NAME}")
+
 endfunction()
